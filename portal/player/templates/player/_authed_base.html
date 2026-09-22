@@ -1,0 +1,72 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Прииск Удерейский{% endblock %}</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            graphite: { 50:'#f6f7f8', 100:'#e6e8eb', 500:'#3a3f47', 700:'#2a2e35', 900:'#1a1d23' },
+            amber:    { 500:'#f5b301', 600:'#d99c00' },
+          },
+          fontFamily: { sans: ['Inter','system-ui','sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+  <!-- Шапка -->
+  <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-20">
+    <div class="flex items-center gap-3">
+      <a href="{% url 'player:index' %}" class="flex items-center gap-3">
+        <div class="w-14 h-14 rounded-lg flex items-center justify-center">
+            <img src="{% static "img/logo.png" %}" class="w-14 h-14 object-contain">
+        </div>
+        <div class="hidden sm:block">
+          <div class="text-sm font-semibold text-graphite-900 leading-tight">Прииск Удерейский</div>
+          <div class="text-xs text-gray-500">Обучение персонала</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="flex items-center gap-3">
+      {% if user.role == 'admin' %}
+        <a href="{% url 'player:admin_panel' %}" class="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-100 transition flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-amber-500"></span>
+          <span>Администратор</span>
+        </a>
+      {% else %}
+        <span class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 flex items-center gap-2">
+          <span class="inline-block w-2 h-2 rounded-full bg-gray-400"></span>
+          <span>Пользователь</span>
+        </span>
+      {% endif %}
+
+      <div class="text-right">
+        <div class="text-sm font-medium text-graphite-900">{{ user.full_name }}</div>
+        <a href="{% url 'users:logout' %}" class="text-xs text-gray-500 hover:text-red-600">Выйти</a>
+      </div>
+    </div>
+  </header>
+
+  {% block content %}{% endblock %}
+
+  {% block dialogs %}{% endblock %}
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

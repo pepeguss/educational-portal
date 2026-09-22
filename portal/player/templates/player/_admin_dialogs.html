@@ -1,0 +1,37 @@
+<dialog id="editor-dialog" aria-labelledby="editor-title" class="m-auto bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 backdrop:bg-black/50">
+  <form id="editor-form" class="space-y-4">
+    {% csrf_token %}
+    <h3 id="editor-title" class="text-lg font-semibold"></h3>
+    <label class="block">
+      <span class="text-sm font-medium text-gray-700">Название</span>
+      <input id="editor-name" name="title" required maxlength="200" autofocus class="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none">
+    </label>
+    <label id="editor-description-field" class="hidden block">
+      <span class="text-sm font-medium text-gray-700">Описание</span>
+      <textarea id="editor-description" name="description" rows="4" class="mt-1 w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"></textarea>
+    </label>
+    <p id="editor-error" role="alert" class="hidden text-sm text-red-600"></p>
+    <div class="flex justify-end gap-2">
+      <button id="editor-cancel" type="button" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition disabled:opacity-50">Отмена</button>
+      <button id="editor-save" type="submit" class="px-4 py-2 rounded-lg bg-graphite-900 text-white hover:bg-graphite-700 transition disabled:opacity-50">Сохранить</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="files-dialog" aria-labelledby="files-title" class="m-auto bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 backdrop:bg-black/50">
+  <h3 id="files-title" class="text-lg font-semibold mb-4">Файлы лекции</h3>
+  <div id="files-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+  <p id="files-empty" class="text-sm text-gray-400 text-center py-4">Файлов пока нет</p>
+  <label class="block mt-4">
+    <span class="text-sm font-medium text-gray-700">Загрузить файл (PDF, DOCX, MP4, MP3)</span>
+    <input id="file-input" type="file" accept=".pdf,.docx,.mp4,.mp3" class="mt-1 block w-full text-sm file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-amber-500 file:text-graphite-900 file:font-medium hover:file:bg-amber-600 disabled:opacity-50">
+  </label>
+  <p id="files-error" role="alert" class="hidden mt-3 text-sm text-red-600"></p>
+  <div class="flex justify-end mt-6">
+    <button id="files-close" type="button" class="px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition disabled:opacity-50">Закрыть</button>
+  </div>
+</dialog>
+
+<template id="file-row-template">
+  {% include "player/_admin_file_row.html" with file=None %}
+</template>

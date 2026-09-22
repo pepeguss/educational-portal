@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Вход — Прииск Удерейский{% endblock %}
+
+{% block body %}
+<section class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-graphite-900 to-graphite-500">
+  <form method="post" class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-5 fade-in">
+    {% csrf_token %}
+
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-lg bg-amber-500 flex items-center justify-center text-graphite-900 font-bold text-xl">П</div>
+      <div>
+        <h1 class="text-lg font-semibold text-graphite-900 leading-tight">Прииск Удерейский</h1>
+        <p class="text-xs text-gray-500">Образовательный портал</p>
+      </div>
+    </div>
+    <h2 class="text-2xl font-semibold">Вход в систему</h2>
+
+    {% if form.errors %}
+      <div class="text-red-600 text-sm">
+        {% for field in form %}{% for e in field.errors %}<p>{{ e }}</p>{% endfor %}{% endfor %}
+        {% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}
+      </div>
+    {% endif %}
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Логин</label>
+      <input name="username" required class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"/>
+    </div>
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+      <input name="password" type="password" required class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"/>
+    </div>
+
+    <button class="w-full py-2.5 rounded-lg bg-graphite-900 text-white font-medium hover:bg-graphite-700 transition">Войти</button>
+    <p class="text-sm text-gray-500 text-center">
+      Нет аккаунта? <a href="{% url 'users:register' %}" class="text-amber-600 hover:underline">Зарегистрироваться</a>
+    </p>
+  </form>
+</section>
+{% endblock %}

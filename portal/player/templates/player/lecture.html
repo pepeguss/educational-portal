@@ -1,0 +1,51 @@
+{% extends "player/_authed_base.html" %}
+{% load static %}
+{% block title %}{{ lecture.title }} — Прииск Удерейский{% endblock %}
+
+{% block content %}
+<main class="flex-1 p-8 overflow-y-auto">
+  <div class="max-w-5xl mx-auto">
+    <a href="{% url 'player:index' %}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-graphite-900 mb-6">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      К разделам
+    </a>
+
+    <div class="mb-6">
+      <div class="text-sm text-amber-600 font-medium mb-1">{{ lecture.section.title }}</div>
+      <h1 class="text-3xl font-semibold text-graphite-900">{{ lecture.title }}</h1>
+      {% if lecture.description %}
+        <p class="text-gray-500 mt-2">{{ lecture.description }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Вкладки файлов -->
+    <div id="files-tabs" class="flex flex-wrap gap-2 mb-4">
+      {% for file in lecture.files.all %}
+        <button data-file-id="{{ file.id }}" data-file-type="{{ file.type }}" data-file-url="{% url 'player:serve_file' file.id %}" data-file-name="{{ file.name }}"
+                class="file-tab px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 hover:border-amber-500 hover:text-amber-700 transition">
+          <span class="mr-2 opacity-60">
+            {% if file.type == 'pdf' %}📄{% elif file.type == 'docx' %}📝{% elif file.type == 'mp4' %}🎬{% elif file.type == 'mp3' %}🎧{% endif %}
+          </span>
+          {{ file.name }}
+        </button>
+      {% endfor %}
+    </div>
+
+    <!-- Плеер -->
+    <div id="viewer" class="protected-viewer bg-white rounded-xl border border-gray-200 shadow-sm min-h-[500px] relative overflow-hidden">
+      {% if not lecture.files.exists %}
+        <div class="flex items-center justify-center h-[500px] text-gray-400">
+          <div class="text-center">
+            <p>Материалы ещё не загружены</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+    <p class="text-xs text-gray-400 mt-3 text-center">Материалы защищены. Скачивание и копирование отключены.</p>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/player.js' %}"></script>
+{% endblock %}
