@@ -5,22 +5,39 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f6f7f8; color: 
   user-select: none; -webkit-user-select: none; -moz-user-select: none;
   -webkit-touch-callout: none;
 }
-.protected-viewer * { user-select: none !important; }
+.protected-viewer * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none;
+}
 .protected-viewer video::-webkit-media-controls-enclosure { overflow: hidden; }
 .protected-viewer video::-webkit-media-controls-panel { width: calc(100% + 30px); }
 
-/* Keep PDF scrolling inside the embedded viewer, with one full page initially. */
-#viewer.pdf-viewer { min-height: 0; }
-.pdf-wrap {
+/* Document pages scroll inside the player, without a native PDF toolbar. */
+#viewer.document-viewer { min-height: 0; }
+.document-scroll {
   height: 75vh;
   height: 75dvh;
-  overflow: hidden;
+  overflow: auto;
+  background: #e6e8eb;
+  padding: 16px;
 }
-.pdf-wrap iframe {
+.pdf-page {
+  margin: 0 auto 16px;
+  background: white;
+  box-shadow: 0 2px 8px #0002;
+}
+.pdf-page canvas {
   display: block;
   width: 100%;
   height: 100%;
-  border: 0;
+}
+.docx-content { width: max-content; min-width: 100%; }
+.docx-content .docx-wrapper { padding: 0; background: transparent; }
+.docx-content a, .docx-content img { pointer-events: none; }
+
+@media print {
+  .protected-viewer { display: none !important; }
 }
 
 

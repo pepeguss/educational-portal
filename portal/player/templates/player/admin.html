@@ -27,7 +27,7 @@
 
           <div class="space-y-2">
             {% for lecture in section.lectures.all %}
-              <div class="bg-graphite-50 rounded-lg p-3 flex items-center justify-between" data-lecture-id="{{ lecture.id }}" data-description="{{ lecture.description }}">
+              <div class="bg-graphite-50 rounded-lg p-3 flex items-center justify-between" data-lecture-id="{{ lecture.id }}" data-description="{{ lecture.description }}" data-test-url="{{ lecture.test_url }}">
                 <div>
                   <div class="font-medium text-graphite-900 lecture-title">{{ lecture.title }}</div>
                   <div class="text-xs text-gray-500"><span data-file-count>{{ lecture.files.count }}</span> файл(ов)</div>
@@ -61,5 +61,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{% static 'js/admin.js' %}?v=2"></script>
+  <script src="{% static 'js/admin.js' %}?v=3"></script>
 {% endblock %}

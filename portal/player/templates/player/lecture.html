@@ -32,7 +32,7 @@
     </div>
 
     <!-- Плеер -->
-    <div id="viewer" class="protected-viewer bg-white rounded-xl border border-gray-200 shadow-sm min-h-[500px] relative overflow-hidden">
+    <div id="viewer" tabindex="0" aria-label="Просмотр материалов лекции" class="protected-viewer bg-white rounded-xl border border-gray-200 shadow-sm min-h-[500px] relative overflow-hidden">
       {% if not lecture.files.exists %}
         <div class="flex items-center justify-center h-[500px] text-gray-400">
           <div class="text-center">
@@ -41,11 +41,27 @@
         </div>
       {% endif %}
     </div>
-    <p class="text-xs text-gray-400 mt-3 text-center">Материалы защищены. Скачивание и копирование отключены.</p>
+    <p class="text-xs text-gray-400 mt-3 text-center">Материалы доступны для просмотра. Выделение, копирование и меню скачивания в плеере отключены.</p>
+    {% with test=lecture.test_embed %}
+      {% if test %}
+        <section class="mt-8" aria-labelledby="lecture-test-title">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 id="lecture-test-title" class="text-xl font-semibold text-graphite-900">Тест для оценки знаний</h2>
+            <a href="{{ lecture.test_url }}" target="_blank" rel="noopener noreferrer" class="text-sm text-amber-700 hover:underline">Открыть тест в новой вкладке</a>
+          </div>
+          <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            {% if test.script %}<script src="{{ test.script }}"></script>{% endif %}
+            <iframe src="{{ test.url }}" name="{{ test.name }}" title="Тест для оценки знаний" width="100%" height="800" frameborder="0" class="block w-full border-0"></iframe>
+          </div>
+        </section>
+      {% endif %}
+    {% endwith %}
   </div>
 </main>
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{% static 'js/player.js' %}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
+  <script src="{% static 'js/player.js' %}?v=2"></script>
 {% endblock %}

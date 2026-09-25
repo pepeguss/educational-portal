@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const nameInput = document.getElementById('editor-name');
   const descriptionInput = document.getElementById('editor-description');
   const descriptionField = document.getElementById('editor-description-field');
+  const testOptions = document.getElementById('editor-test-options');
+  const hasTestInput = document.getElementById('editor-has-test');
+  const testField = document.getElementById('editor-test-field');
+  const testUrlInput = document.getElementById('editor-test-url');
   const editorError = document.getElementById('editor-error');
   const filesDialog = document.getElementById('files-dialog');
   const filesList = document.getElementById('files-list');
@@ -38,6 +42,20 @@ document.addEventListener('DOMContentLoaded', () => {
     element.classList.toggle('hidden', !message);
   }
 
+  function syncTestField() {
+    const enabled = editingLecture && hasTestInput.checked;
+    testOptions.classList.toggle('hidden', !editingLecture);
+    hasTestInput.disabled = !editingLecture;
+    testField.classList.toggle('hidden', !enabled);
+    testUrlInput.disabled = !enabled;
+    testUrlInput.required = enabled;
+  }
+
+  hasTestInput.addEventListener('change', () => {
+    syncTestField();
+    if (hasTestInput.checked) testUrlInput.focus();
+  });
+
   function openEditor(title, url, values = {}, isLecture = false) {
     editorUrl = url;
     editingLecture = isLecture;
@@ -48,6 +66,9 @@ document.addEventListener('DOMContentLoaded', () => {
     descriptionInput.value = values.description || '';
     descriptionInput.disabled = !isLecture;
     descriptionField.classList.toggle('hidden', !isLecture);
+    testUrlInput.value = values.test_url || '';
+    hasTestInput.checked = Boolean(values.test_url);
+    syncTestField();
     showError(editorError);
     editor.showModal();
     nameInput.focus();
@@ -69,7 +90,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const data = { title };
-    if (editingLecture) data.description = descriptionInput.value.trim();
+    if (editingLecture) {
+      data.description = descriptionInput.value.trim();
+      data.has_test = hasTestInput.checked ? '1' : '0';
+      data.test_url = hasTestInput.checked ? testUrlInput.value.trim() : '';
+    }
     saving = true;
     const controls = form.querySelectorAll('input, textarea, button');
     controls.forEach(control => { control.disabled = true; });
@@ -83,6 +108,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saving = false;
       controls.forEach(control => { control.disabled = false; });
       descriptionInput.disabled = !editingLecture;
+      syncTestField();
     }
   });
 
@@ -176,6 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openEditor('Редактировать лекцию', `/api/lecture/${lid}/update/`, {
           title: lecture.querySelector('.lecture-title').textContent,
           description: lecture.dataset.description,
+          test_url: lecture.dataset.testUrl,
         }, true);
         break;
       case 'files':

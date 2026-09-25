@@ -1,4 +1,6 @@
 from django.db import models
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+import re
 
 class Section(models.Model):
     title = models.CharField('Название раздела', max_length=200)
@@ -16,6 +18,7 @@ class Lecture(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='lectures', verbose_name='Раздел')
     title = models.CharField('Название лекции', max_length=200)
     description = models.TextField('Описание', blank=True)
+    test_url = models.URLField('Ссылка на тест для оценки знаний', max_length=2000, blank=True)
     order = models.PositiveIntegerField('Порядок', default=0)
 
     class Meta:
@@ -25,6 +28,23 @@ class Lecture(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def test_embed(self):
+        if not self.test_url:
+            return None
+        parts = urlsplit(self.test_url)
+        form = re.fullmatch(r'/(?:cloud/)?u/([a-zA-Z0-9_-]+)/?', parts.path)
+        if parts.hostname in ('forms.yandex.ru', 'forms.yandex.com') and form:
+            query = [(key, value) for key, value in parse_qsl(parts.query, keep_blank_values=True)
+                     if key != 'iframe']
+            query.append(('iframe', '1'))
+            return {
+                'url': urlunsplit(('https', parts.hostname, parts.path, urlencode(query), parts.fragment)),
+                'name': f'ya-form-{form.group(1)}',
+                'script': f'https://{parts.hostname}/_static/embed.js',
+            }
+        return {'url': self.test_url, 'name': f'lecture-test-{self.pk}'}
 
 class LectureFile(models.Model):
     TYPE_CHOICES = (
