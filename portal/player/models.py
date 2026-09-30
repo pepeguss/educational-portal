@@ -14,12 +14,30 @@ class Section(models.Model):
     def __str__(self):
         return self.title
 
+class LectureQuerySet(models.QuerySet):
+    def visible_to(self, user):
+        if not user.is_authenticated:
+            return self.none()
+        if user.role == 'admin':
+            return self
+        access = models.Q(is_public=True)
+        if user.department_id:
+            access |= models.Q(departments=user.department_id)
+        return self.filter(access).distinct()
+
+
 class Lecture(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='lectures', verbose_name='Раздел')
     title = models.CharField('Название лекции', max_length=200)
     description = models.TextField('Описание', blank=True)
     test_url = models.URLField('Ссылка на тест для оценки знаний', max_length=2000, blank=True)
     order = models.PositiveIntegerField('Порядок', default=0)
+    is_public = models.BooleanField('Доступна всем пользователям', default=True)
+    departments = models.ManyToManyField(
+        'users.Department', blank=True, related_name='lectures', verbose_name='Доступна отделам',
+    )
+
+    objects = LectureQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'Лекция'

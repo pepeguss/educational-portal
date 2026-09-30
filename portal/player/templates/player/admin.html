@@ -5,6 +5,51 @@
 {% block content %}
 <main class="flex-1 p-8 overflow-y-auto">
   <div class="max-w-5xl mx-auto">
+    <section class="mb-8" aria-labelledby="departments-title">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <h2 id="departments-title" class="text-2xl font-semibold">Отделы</h2>
+        <button data-act="add-department" class="px-4 py-2 rounded-lg bg-amber-500 font-medium hover:bg-amber-600">+ Отдел</button>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        {% for department in departments %}
+          <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
+            <span class="font-medium">{{ department.name }}</span>
+            <span class="text-sm text-gray-500 ml-2">{{ department.user_count }} польз.</span>
+          </div>
+        {% empty %}
+          <p class="text-sm text-gray-500">Создайте отдел, чтобы назначить ему пользователей и лекции.</p>
+        {% endfor %}
+      </div>
+    </section>
+
+    <details class="mb-8 bg-white rounded-xl border border-gray-200 p-5">
+      <summary class="cursor-pointer text-lg font-semibold">Пользователи и отделы</summary>
+      <p class="mt-3 text-sm text-gray-500">У каждого пользователя один отдел. Пользователям без отдела доступны общие лекции. Администраторы видят все лекции.</p>
+      <div class="mt-4 space-y-3">
+        {% for portal_user in portal_users %}
+          <form data-user-department-form action="{% url 'player:api_user_department_update' portal_user.id %}" method="post" class="border-t border-gray-100 pt-3">
+            {% csrf_token %}
+            <div class="flex flex-wrap items-center gap-3">
+              <label for="user-department-{{ portal_user.id }}" class="flex-1 min-w-0">
+                <span class="block font-medium break-words">{{ portal_user.full_name|default:portal_user.username }}</span>
+                <span class="block text-xs text-gray-500">{{ portal_user.username }} · {{ portal_user.get_role_display }}</span>
+              </label>
+              <select id="user-department-{{ portal_user.id }}" name="department" aria-label="Отдел пользователя {{ portal_user.username }}" class="max-w-full sm:w-56 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                <option value="">Без отдела</option>
+                {% for department in departments %}
+                  <option value="{{ department.id }}" {% if portal_user.department_id == department.id %}selected{% endif %}>{{ department.name }}</option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="px-3 py-2 text-sm rounded-lg bg-graphite-900 text-white disabled:opacity-50">Сохранить</button>
+            </div>
+            <p data-department-error role="alert" class="hidden mt-2 text-sm text-red-600"></p>
+          </form>
+        {% empty %}
+          <p class="text-sm text-gray-500">Пользователей пока нет.</p>
+        {% endfor %}
+      </div>
+    </details>
+
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-semibold">Разделы и лекции</h1>
       <button id="btn-add-section" data-act="add-section" class="px-4 py-2 rounded-lg bg-amber-500 text-graphite-900 font-medium hover:bg-amber-600 transition">+ Раздел</button>
@@ -27,10 +72,11 @@
 
           <div class="space-y-2">
             {% for lecture in section.lectures.all %}
-              <div class="bg-graphite-50 rounded-lg p-3 flex items-center justify-between" data-lecture-id="{{ lecture.id }}" data-description="{{ lecture.description }}" data-test-url="{{ lecture.test_url }}">
+              <div class="bg-graphite-50 rounded-lg p-3 flex items-center justify-between" data-lecture-id="{{ lecture.id }}" data-description="{{ lecture.description }}" data-test-url="{{ lecture.test_url }}" data-visibility="{% if lecture.is_public %}all{% else %}departments{% endif %}" data-departments="{% for department in lecture.departments.all %}{{ department.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 <div>
                   <div class="font-medium text-graphite-900 lecture-title">{{ lecture.title }}</div>
                   <div class="text-xs text-gray-500"><span data-file-count>{{ lecture.files.count }}</span> файл(ов)</div>
+                  <div class="text-xs text-gray-500 mt-1">Доступ: {% if lecture.is_public %}все пользователи{% else %}{% for department in lecture.departments.all %}{{ department.name }}{% if not forloop.last %}, {% endif %}{% empty %}только администраторы{% endfor %}{% endif %}</div>
                 </div>
                 <div class="flex gap-2">
                   <button data-act="edit-lecture" class="px-3 py-1.5 text-xs rounded-lg bg-white border border-gray-200 hover:border-amber-500">Изменить</button>
@@ -61,5 +107,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{% static 'js/admin.js' %}?v=3"></script>
+  <script src="{% static 'js/admin.js' %}?v=4"></script>
 {% endblock %}

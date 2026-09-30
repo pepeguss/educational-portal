@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.conf import settings
-from django.conf.urls.static import static
+from player.views import serve_media
 
 urlpatterns = [
     path('django-admin/', admin.site.urls),
     path('users/', include('users.urls')),
+    path('media/<path:path>', serve_media, name='serve_media'),
     path('', include('player.urls')),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]

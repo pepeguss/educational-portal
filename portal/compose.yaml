@@ -5,6 +5,7 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+    restart: unless-stopped
 
   tunnel:
     image: cloudflare/cloudflared:latest

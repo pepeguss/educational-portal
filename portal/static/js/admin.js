@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const testField = document.getElementById('editor-test-field');
   const testUrlInput = document.getElementById('editor-test-url');
   const editorError = document.getElementById('editor-error');
+  const accessOptions = document.getElementById('editor-access-options');
+  const departmentsField = document.getElementById('editor-departments');
   const filesDialog = document.getElementById('files-dialog');
   const filesList = document.getElementById('files-list');
   const fileInput = document.getElementById('file-input');
@@ -23,7 +25,9 @@ document.addEventListener('DOMContentLoaded', () => {
   async function post(url, data) {
     const body = new FormData();
     for (const [key, value] of Object.entries(data)) {
-      body.append(key, value ?? '');
+      for (const item of Array.isArray(value) ? value : [value]) {
+        body.append(key, item ?? '');
+      }
     }
     const response = await fetch(url, {
       method: 'POST', body, headers: { 'X-CSRFToken': csrf },
@@ -56,6 +60,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hasTestInput.checked) testUrlInput.focus();
   });
 
+  function syncAccessFields() {
+    accessOptions.classList.toggle('hidden', !editingLecture);
+    accessOptions.disabled = !editingLecture;
+    const restricted = form.elements.visibility.value === 'departments';
+    departmentsField.classList.toggle('hidden', !restricted);
+    departmentsField.querySelectorAll('input').forEach(input => {
+      input.disabled = !editingLecture || !restricted;
+    });
+  }
+
+  accessOptions.addEventListener('change', syncAccessFields);
+
   function openEditor(title, url, values = {}, isLecture = false) {
     editorUrl = url;
     editingLecture = isLecture;
@@ -69,6 +85,12 @@ document.addEventListener('DOMContentLoaded', () => {
     testUrlInput.value = values.test_url || '';
     hasTestInput.checked = Boolean(values.test_url);
     syncTestField();
+    form.elements.visibility.value = values.visibility || 'all';
+    const selectedDepartments = (values.departments || '').split(',');
+    departmentsField.querySelectorAll('input').forEach(input => {
+      input.checked = selectedDepartments.includes(input.value);
+    });
+    syncAccessFields();
     showError(editorError);
     editor.showModal();
     nameInput.focus();
@@ -94,6 +116,12 @@ document.addEventListener('DOMContentLoaded', () => {
       data.description = descriptionInput.value.trim();
       data.has_test = hasTestInput.checked ? '1' : '0';
       data.test_url = hasTestInput.checked ? testUrlInput.value.trim() : '';
+      data.visibility = form.elements.visibility.value;
+      data.departments = Array.from(departmentsField.querySelectorAll('input:checked'), input => input.value);
+      if (data.visibility === 'departments' && !data.departments.length) {
+        showError(editorError, 'Выберите хотя бы один отдел. Если отделов нет, сначала создайте отдел в админке.');
+        return;
+      }
     }
     saving = true;
     const controls = form.querySelectorAll('input, textarea, button');
@@ -109,7 +137,30 @@ document.addEventListener('DOMContentLoaded', () => {
       controls.forEach(control => { control.disabled = false; });
       descriptionInput.disabled = !editingLecture;
       syncTestField();
+      syncAccessFields();
     }
+  });
+
+  document.querySelectorAll('[data-user-department-form]').forEach(departmentForm => {
+    departmentForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const select = departmentForm.elements.department;
+      const button = departmentForm.querySelector('button');
+      if (button.disabled) return;
+      const errorElement = departmentForm.querySelector('[data-department-error]');
+      button.disabled = true;
+      select.disabled = true;
+      showError(errorElement);
+      try {
+        await post(departmentForm.action, { department: select.value });
+        location.reload();
+      } catch (error) {
+        showError(errorElement, error.message);
+      } finally {
+        button.disabled = false;
+        select.disabled = false;
+      }
+    });
   });
 
   // Разметка файлов хранится в HTML; после изменений сохраняем список для повторного открытия.
@@ -187,6 +238,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const lid = lecture?.dataset.lectureId;
 
     switch (button.dataset.act) {
+      case 'add-department':
+        openEditor('Новый отдел', '/api/department/create/');
+        break;
       case 'add-section':
         openEditor('Новый раздел', '/api/section/create/');
         break;
@@ -203,6 +257,8 @@ document.addEventListener('DOMContentLoaded', () => {
           title: lecture.querySelector('.lecture-title').textContent,
           description: lecture.dataset.description,
           test_url: lecture.dataset.testUrl,
+          visibility: lecture.dataset.visibility,
+          departments: lecture.dataset.departments,
         }, true);
         break;
       case 'files':
