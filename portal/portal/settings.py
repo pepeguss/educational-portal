@@ -25,7 +25,15 @@ SECRET_KEY = 'django-insecure-)7pim9r(md@m83ids!42z4gmw^%df9_a&2o1^2%s2_%mnfb4aq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "pepegus.fun",
+    "localhost",
+    "127.0.0.1"
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://pepegus.fun",
+]
 
 
 # Application definition
