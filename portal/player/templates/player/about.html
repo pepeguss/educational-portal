@@ -1,0 +1,34 @@
+{% extends "player/_authed_base.html" %}
+{% block title %}О компании — Прииск Удерейский{% endblock %}
+
+{% block content %}
+<main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+  <a href="{% url 'player:index' %}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-amber-700 rounded focus-visible:outline-amber-500 mb-6">
+    <span aria-hidden="true">←</span> Вернуться к обучению
+  </a>
+  <article class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-8">
+    <h1 class="text-2xl sm:text-3xl font-semibold text-graphite-900 mb-6">О компании АО «Прииск Удерейский»</h1>
+    <div class="space-y-4 text-gray-700 leading-relaxed">
+      <p>В составе предприятия одиннадцать золотодобывающих участков, ведущих разработку месторождений в Красноярском крае. Золотодобыча ведется на россыпных месторождениях дражным и гидромеханическим способами.</p>
+      <p>Геологоразведочные работы для восполнения минерально-сырьевой базы проводит собственная служба и подрядные организации. Ряд проектов в Туруханском районе и Забайкальском крае находятся в стадии развития.</p>
+      <p>Для разработки месторождений Компания располагает парком горной и автотранспортной техники (более 180 единиц), современной ремонтной базой. Ежегодно предприятие обновляет парк горной-транспортной техники.</p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 items-start gap-4 my-8">
+      <img src="https://i.siteapi.org/KghiTJffiPwVf6VkiSvlFqIgvSs=/fit-in/1400x1000/center/top/s2.siteapi.org/0feb9525656642a/img/ix4xj4yb3bk80kg08gwoscook8wck8" alt="Вахтовый посёлок АО «Прииск Удерейский»" width="1280" height="958" class="w-full aspect-[4/3] object-cover rounded-xl" loading="lazy" decoding="async">
+      <img src="https://i.siteapi.org/26UCBOIrZ6VHaE7yzLX5vbjboPM=/fit-in/1400x1000/center/top/s2.siteapi.org/0feb9525656642a/img/tqi6lja8s1wk8gck4cccgkwc0w4oss" alt="Бульдозер на золотодобывающем участке АО «Прииск Удерейский»" width="1400" height="788" class="w-full aspect-[4/3] object-cover rounded-xl" loading="lazy" decoding="async">
+    </div>
+
+    <section class="border-t border-gray-100 pt-6" aria-labelledby="company-priorities">
+      <h2 id="company-priorities" class="text-xl font-semibold mb-4">Основные приоритеты Компании</h2>
+      <ul class="list-disc pl-5 space-y-3 text-gray-700 leading-relaxed marker:text-amber-600">
+        <li>Создание безопасных условий труда</li>
+        <li>Способствование профессиональному росту специалистов компании</li>
+        <li>Улучшение социальных условий для персонала</li>
+        <li>Поддержка местных сообществ на территории, где ведет деятельность компания</li>
+        <li>Четкое соблюдение трудового и налогового законодательства</li>
+      </ul>
+    </section>
+  </article>
+</main>
+{% endblock %}

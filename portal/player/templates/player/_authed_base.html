@@ -22,18 +22,18 @@
     }
   </script>
 
-  <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=2">
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=6">
   <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">
   {% block extra_head %}{% endblock %}
 </head>
 <body class="antialiased min-h-screen flex flex-col">
 
   <!-- Шапка -->
-  <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between gap-3 px-3 sm:px-6 sticky top-0 z-20">
+  <header class="portal-header bg-white border-b border-gray-200 px-3 sm:px-6 sticky top-0 z-20">
     <div class="flex items-center gap-3">
       <a href="{% url 'player:index' %}" class="flex items-center gap-3">
         <div class="w-14 h-14 rounded-lg flex items-center justify-center">
-            <img src="{% static "img/logo.png" %}" class="w-14 h-14 object-contain">
+            <img src="{% static "img/logo.png" %}" alt="Прииск Удерейский — обучение персонала" class="w-14 h-14 object-contain">
         </div>
         <div class="hidden sm:block">
           <div class="text-sm font-semibold text-graphite-900 leading-tight">Прииск Удерейский</div>
@@ -42,7 +42,12 @@
       </a>
     </div>
 
-    <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+    <nav class="portal-nav" aria-label="Основная навигация">
+      <a href="{% url 'player:about' %}" class="portal-nav-link"{% if request.resolver_match.url_name == 'about' %} aria-current="page"{% endif %}>О компании</a>
+      <a href="{% url 'player:contacts' %}" class="portal-nav-link"{% if request.resolver_match.url_name == 'contacts' %} aria-current="page"{% endif %}>Контактная информация</a>
+    </nav>
+
+    <div class="portal-account flex items-center gap-2 sm:gap-3 min-w-0">
       {% with name_parts=user.full_name.split %}
       <div class="flex items-center gap-2.5 min-w-0">
         <div aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-700 ring-1 ring-inset ring-amber-500/20 text-sm font-semibold">

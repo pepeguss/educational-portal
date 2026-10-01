@@ -72,11 +72,12 @@
 
           <div class="space-y-2">
             {% for lecture in section.lectures.all %}
-              <div class="bg-graphite-50 rounded-lg p-3 flex items-center justify-between" data-lecture-id="{{ lecture.id }}" data-description="{{ lecture.description }}" data-test-url="{{ lecture.test_url }}" data-visibility="{% if lecture.is_public %}all{% else %}departments{% endif %}" data-departments="{% for department in lecture.departments.all %}{{ department.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+              <div class="bg-graphite-50 rounded-lg p-3 flex flex-wrap gap-3 items-center justify-between" data-lecture-id="{{ lecture.id }}" data-description="{{ lecture.description }}" data-test-url="{{ lecture.test_url }}" data-has-practice="{{ lecture.has_practice|yesno:'1,0' }}" data-practice-task="{{ lecture.practice_task }}" data-visibility="{% if lecture.is_public %}all{% else %}departments{% endif %}" data-departments="{% for department in lecture.departments.all %}{{ department.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 <div>
                   <div class="font-medium text-graphite-900 lecture-title">{{ lecture.title }}</div>
                   <div class="text-xs text-gray-500"><span data-file-count>{{ lecture.files.count }}</span> файл(ов)</div>
                   <div class="text-xs text-gray-500 mt-1">Доступ: {% if lecture.is_public %}все пользователи{% else %}{% for department in lecture.departments.all %}{{ department.name }}{% if not forloop.last %}, {% endif %}{% empty %}только администраторы{% endfor %}{% endif %}</div>
+                  {% if lecture.has_practice %}<a href="{% url 'player:lecture' lecture.id %}" class="inline-block text-xs text-amber-700 hover:underline mt-1">Практика · Открыть работы</a>{% endif %}
                 </div>
                 <div class="flex gap-2">
                   <button data-act="edit-lecture" class="px-3 py-1.5 text-xs rounded-lg bg-white border border-gray-200 hover:border-amber-500">Изменить</button>
@@ -107,5 +108,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{% static 'js/admin.js' %}?v=4"></script>
+  <script src="{% static 'js/admin.js' %}?v=5"></script>
 {% endblock %}

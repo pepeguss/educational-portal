@@ -4,6 +4,8 @@ from . import views
 app_name = 'player'
 urlpatterns = [
     path('', views.index_view, name='index'),
+    path('about/', views.about_view, name='about'),
+    path('contacts/', views.contacts_view, name='contacts'),
     path('lecture/<int:lecture_id>/', views.lecture_view, name='lecture'),
     path('admin/', views.admin_view, name='admin_panel'),
     path('api/department/create/', views.api_department_create, name='api_department_create'),
@@ -19,6 +21,12 @@ urlpatterns = [
 
     path('api/file/<int:lecture_id>/upload/', views.api_file_upload, name='api_file_upload'),
     path('api/file/<int:file_id>/delete/', views.api_file_delete, name='api_file_delete'),
+
+    path('api/practice/<int:lecture_id>/upload/', views.api_practice_upload, name='api_practice_upload'),
+    path('api/practice/<int:lecture_id>/submit/', views.api_practice_submit, name='api_practice_submit'),
+    path('api/practice/<int:lecture_id>/withdraw/', views.api_practice_withdraw, name='api_practice_withdraw'),
+    path('api/practice/file/<int:file_id>/delete/', views.api_practice_file_delete, name='api_practice_file_delete'),
+    path('practice/file/<int:file_id>/', views.serve_practice_file, name='serve_practice_file'),
 
     path('file/<int:file_id>/', views.serve_file, name='serve_file'),
 ]

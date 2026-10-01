@@ -1,0 +1,74 @@
+{% extends "player/_authed_base.html" %}
+{% block title %}Контактная информация — Прииск Удерейский{% endblock %}
+
+{% block content %}
+<main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+  <a href="{% url 'player:index' %}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-amber-700 rounded focus-visible:outline-amber-500 mb-6">
+    <span aria-hidden="true">←</span> Вернуться к обучению
+  </a>
+  <h1 class="text-2xl sm:text-3xl font-semibold text-graphite-900 mb-2">Контактная информация</h1>
+  <p class="text-gray-500 mb-8">АО «Прииск Удерейский»</p>
+
+  <div class="grid md:grid-cols-2 gap-5">
+    <section class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6" aria-labelledby="contacts-addresses">
+      <h2 id="contacts-addresses" class="text-xl font-semibold mb-5">Адреса</h2>
+      <div class="space-y-5">
+        <div>
+          <h3 class="font-semibold mb-1">Отдел кадров — Раздолинск</h3>
+          <address class="not-italic text-gray-600 leading-relaxed">Россия, п. Раздолинск, ул. Лермонтова, д. 12а</address>
+        </div>
+        <div class="border-t border-gray-100 pt-5">
+          <h3 class="font-semibold mb-1">Служба персонала — Красноярск</h3>
+          <address class="not-italic text-gray-600 leading-relaxed">Россия, г. Красноярск, ул. Копылова, д. 40</address>
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6" aria-labelledby="contacts-phones">
+      <h2 id="contacts-phones" class="text-xl font-semibold mb-5">Телефоны</h2>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-sm text-gray-500 mb-1">Приёмная</dt>
+          <dd><a href="tel:+73912529410" class="font-medium hover:text-amber-700">+7 (391) 252-94-10</a></dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500 mb-1">Отдел закупок</dt>
+          <dd><a href="tel:+73912529445" class="font-medium hover:text-amber-700">+7 (391) 252-94-45</a></dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500 mb-1">Служба персонала</dt>
+          <dd class="flex flex-wrap gap-x-5 gap-y-2">
+            <a href="tel:+79233538363" class="font-medium hover:text-amber-700">+7 (923) 353-83-63</a>
+            <a href="tel:+73912529407" class="font-medium hover:text-amber-700">+7 (391) 252-94-07</a>
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6" aria-labelledby="contacts-emails">
+      <h2 id="contacts-emails" class="text-xl font-semibold mb-5">Электронная почта</h2>
+      <dl class="space-y-4">
+        <div>
+          <dt class="text-sm text-gray-500 mb-1">Служба персонала — Раздолинск</dt>
+          <dd><a href="mailto:ok@priisk.su" class="font-medium hover:text-amber-700">ok@priisk.su</a></dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500 mb-1">Служба персонала — Красноярск</dt>
+          <dd><a href="mailto:ok.kras@priisk.su" class="font-medium hover:text-amber-700">ok.kras@priisk.su</a></dd>
+        </div>
+        <div>
+          <dt class="text-sm text-gray-500 mb-1">Приёмная</dt>
+          <dd><a href="mailto:priisk@gmail.com" class="font-medium hover:text-amber-700">priisk@gmail.com</a></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6" aria-labelledby="contacts-hours">
+      <h2 id="contacts-hours" class="text-xl font-semibold mb-5">Часы работы</h2>
+      <p class="font-medium">Понедельник — пятница</p>
+      <p class="text-gray-600 mt-1">с 08:00 до 17:00</p>
+    </section>
+  </div>
+  <p class="text-sm text-gray-500 mt-6">Источник: <a href="https://priisk24.ru/contacts" target="_blank" rel="noopener noreferrer" class="underline underline-offset-4 hover:text-amber-700">официальный сайт компании</a></p>
+</main>
+{% endblock %}

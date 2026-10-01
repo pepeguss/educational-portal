@@ -1,6 +1,59 @@
 html, body { height: 100%; }
 body { font-family: 'Inter', system-ui, sans-serif; background: #f6f7f8; color: #1a1d23; }
 
+.portal-header {
+  /* Левая граница вкладок на широком экране: 320px — ширина сайдбара с лекциями.
+     Увеличьте значение, чтобы сдвинуть вкладки вправо, уменьшите — влево. */
+  --portal-nav-start: 320px;
+  display: grid;
+  flex-shrink: 0;
+  /* 36px = отступ шапки слева (24px) + промежуток между колонками (12px). */
+  grid-template-columns: minmax(max-content, calc(var(--portal-nav-start) - 36px)) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+}
+.portal-nav { display: flex; justify-content: flex-start; gap: 8px; }
+.portal-nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  color: #3a3f47;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: background-color .2s, color .2s;
+}
+.portal-nav-link:hover { background: #f6f7f8; color: #1a1d23; }
+.portal-nav-link[aria-current="page"] { background: #fff7df; color: #92400e; }
+.portal-nav-link:focus-visible { outline: 2px solid #f5b301; outline-offset: 2px; }
+.portal-account { justify-self: end; }
+.lecture-practice-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 1024px) {
+  .lecture-practice-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1100px) {
+  .portal-header { grid-template-columns: auto minmax(0, 1fr); gap: 0 12px; }
+  .portal-account { grid-column: 2; grid-row: 1; }
+  .portal-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    padding: 6px 0 10px;
+    border-top: 1px solid #f3f4f6;
+  }
+}
+@media (max-width: 400px) {
+  .portal-nav { gap: 4px; }
+  .portal-nav-link { padding: 10px 8px; font-size: 13px; }
+}
+
 .protected-viewer {
   user-select: none; -webkit-user-select: none; -moz-user-select: none;
   -webkit-touch-callout: none;

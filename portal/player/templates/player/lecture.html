@@ -3,8 +3,9 @@
 {% block title %}{{ lecture.title }} — Прииск Удерейский{% endblock %}
 
 {% block content %}
-<main class="flex-1 p-8 overflow-y-auto">
-  <div class="max-w-5xl mx-auto">
+<main class="flex-1 {% if lecture.has_practice %}p-4 sm:p-6{% else %}p-8{% endif %} overflow-y-auto">
+  <div class="{% if lecture.has_practice %}lecture-practice-layout{% else %}max-w-5xl mx-auto{% endif %}">
+    <div class="min-w-0">
     <a href="{% url 'player:index' %}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-graphite-900 mb-6">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       К разделам
@@ -56,6 +57,10 @@
         </section>
       {% endif %}
     {% endwith %}
+    </div>
+    {% if lecture.has_practice %}
+      {% include 'player/_practice_panel.html' %}
+    {% endif %}
   </div>
 </main>
 {% endblock %}
@@ -64,4 +69,5 @@
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
   <script src="{% static 'js/player.js' %}?v=2"></script>
+  {% if lecture.has_practice and user.role != 'admin' %}<script src="{% static 'js/practice.js' %}?v=1"></script>{% endif %}
 {% endblock %}

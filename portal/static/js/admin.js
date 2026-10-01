@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const hasTestInput = document.getElementById('editor-has-test');
   const testField = document.getElementById('editor-test-field');
   const testUrlInput = document.getElementById('editor-test-url');
+  const practiceOptions = document.getElementById('editor-practice-options');
+  const hasPracticeInput = document.getElementById('editor-has-practice');
+  const practiceField = document.getElementById('editor-practice-field');
+  const practiceTaskInput = document.getElementById('editor-practice-task');
   const editorError = document.getElementById('editor-error');
   const accessOptions = document.getElementById('editor-access-options');
   const departmentsField = document.getElementById('editor-departments');
@@ -60,6 +64,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hasTestInput.checked) testUrlInput.focus();
   });
 
+  function syncPracticeField() {
+    const enabled = editingLecture && hasPracticeInput.checked;
+    practiceOptions.classList.toggle('hidden', !editingLecture);
+    hasPracticeInput.disabled = !editingLecture;
+    practiceField.classList.toggle('hidden', !enabled);
+    practiceTaskInput.disabled = !enabled;
+    practiceTaskInput.required = enabled;
+  }
+
+  hasPracticeInput.addEventListener('change', () => {
+    syncPracticeField();
+    if (hasPracticeInput.checked) practiceTaskInput.focus();
+  });
+
   function syncAccessFields() {
     accessOptions.classList.toggle('hidden', !editingLecture);
     accessOptions.disabled = !editingLecture;
@@ -85,6 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
     testUrlInput.value = values.test_url || '';
     hasTestInput.checked = Boolean(values.test_url);
     syncTestField();
+    hasPracticeInput.checked = values.has_practice === '1';
+    practiceTaskInput.value = values.practice_task || '';
+    syncPracticeField();
     form.elements.visibility.value = values.visibility || 'all';
     const selectedDepartments = (values.departments || '').split(',');
     departmentsField.querySelectorAll('input').forEach(input => {
@@ -116,6 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
       data.description = descriptionInput.value.trim();
       data.has_test = hasTestInput.checked ? '1' : '0';
       data.test_url = hasTestInput.checked ? testUrlInput.value.trim() : '';
+      data.has_practice = hasPracticeInput.checked ? '1' : '0';
+      data.practice_task = practiceTaskInput.value.trim();
       data.visibility = form.elements.visibility.value;
       data.departments = Array.from(departmentsField.querySelectorAll('input:checked'), input => input.value);
       if (data.visibility === 'departments' && !data.departments.length) {
@@ -137,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
       controls.forEach(control => { control.disabled = false; });
       descriptionInput.disabled = !editingLecture;
       syncTestField();
+      syncPracticeField();
       syncAccessFields();
     }
   });
@@ -257,6 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
           title: lecture.querySelector('.lecture-title').textContent,
           description: lecture.dataset.description,
           test_url: lecture.dataset.testUrl,
+          has_practice: lecture.dataset.hasPractice,
+          practice_task: lecture.dataset.practiceTask,
           visibility: lecture.dataset.visibility,
           departments: lecture.dataset.departments,
         }, true);

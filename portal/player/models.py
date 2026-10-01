@@ -1,4 +1,8 @@
-from django.db import models
+from django.db import models, transaction
+from django.conf import settings
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
+from uuid import uuid4
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 import re
 
@@ -31,6 +35,8 @@ class Lecture(models.Model):
     title = models.CharField('Название лекции', max_length=200)
     description = models.TextField('Описание', blank=True)
     test_url = models.URLField('Ссылка на тест для оценки знаний', max_length=2000, blank=True)
+    has_practice = models.BooleanField('Практическая часть', default=False)
+    practice_task = models.TextField('Задание для практики', blank=True)
     order = models.PositiveIntegerField('Порядок', default=0)
     is_public = models.BooleanField('Доступна всем пользователям', default=True)
     departments = models.ManyToManyField(
@@ -82,3 +88,36 @@ class LectureFile(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PracticeSubmission(models.Model):
+    lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name='submissions')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='practice_submissions')
+    submitted_at = models.DateTimeField('Сдано', null=True, blank=True)
+    updated_at = models.DateTimeField('Обновлено', auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['lecture', 'user'], name='unique_lecture_submission')]
+        ordering = ['-submitted_at', '-id']
+
+
+def practice_upload_path(instance, filename):
+    return f'practice/{instance.submission.lecture_id}/{instance.submission.user_id}/{uuid4().hex}'
+
+
+class PracticeFile(models.Model):
+    submission = models.ForeignKey(PracticeSubmission, on_delete=models.CASCADE, related_name='files')
+    name = models.CharField('Имя файла', max_length=255)
+    file = models.FileField('Файл работы', upload_to=practice_upload_path)
+    size = models.PositiveBigIntegerField('Размер файла')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['uploaded_at', 'id']
+
+
+@receiver(post_delete, sender=PracticeFile)
+def delete_practice_file_from_storage(sender, instance, **kwargs):
+    if instance.file:
+        storage, name = instance.file.storage, instance.file.name
+        transaction.on_commit(lambda: storage.delete(name))
