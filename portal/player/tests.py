@@ -1,3 +1,4 @@
+import json
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
@@ -155,6 +156,102 @@ class DepartmentAccessTests(TestCase):
         for data in [{}, {'department': 'invalid'}, {'department': '999999'}, {'department': '9' * 100}]:
             self.assertEqual(self.client.post(endpoint, data).status_code, 400)
 
+    def test_bulk_departments_assign_move_remove_and_preserve_others(self):
+        changes = [
+            {'user_id': self.unassigned.pk, 'department_id': self.department.pk},
+            {'user_id': self.member.pk, 'department_id': self.other_department.pk},
+            {'user_id': self.outsider.pk, 'department_id': None},
+        ]
+        response = self.client.post(reverse('player:api_user_departments_update'), {
+            'changes': json.dumps(changes),
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['updated'], 3)
+        for change in changes:
+            self.assertEqual(get_user_model().objects.get(pk=change['user_id']).department_id,
+                             change['department_id'])
+        self.admin.refresh_from_db()
+        self.assertIsNone(self.admin.department_id)
+
+    def test_bulk_invalid_assignments_do_not_partially_save(self):
+        valid = {'user_id': self.member.pk, 'department_id': self.other_department.pk}
+        for invalid in [
+            {'user_id': self.outsider.pk, 'department_id': 999999},
+            {'user_id': 999999, 'department_id': None},
+            {'user_id': self.outsider.pk},
+            {'user_id': self.member.pk, 'department_id': None},
+            {'user_id': True, 'department_id': None},
+            {'user_id': self.outsider.pk, 'department_id': 'invalid'},
+            {'user_id': 2**100, 'department_id': None},
+        ]:
+            with self.subTest(invalid=invalid):
+                response = self.client.post(reverse('player:api_user_departments_update'), {
+                    'changes': json.dumps([valid, invalid]),
+                })
+                self.assertEqual(response.status_code, 400)
+                self.member.refresh_from_db()
+                self.assertEqual(self.member.department_id, self.department.pk)
+
+    def test_bulk_departments_require_admin_and_valid_payload(self):
+        endpoint = reverse('player:api_user_departments_update')
+        for payload in ['', 'invalid', '{}', 'null', '[]', '[null]']:
+            self.assertEqual(self.client.post(endpoint, {'changes': payload}).status_code, 400)
+        self.assertEqual(self.client.get(endpoint).status_code, 405)
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.post(endpoint, {'changes': json.dumps([
+            {'user_id': self.member.pk, 'department_id': None},
+        ])}).status_code, 403)
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.department_id, self.department.pk)
+        self.client.logout()
+        self.assertEqual(self.client.post(endpoint).status_code, 302)
+
+    def test_admin_can_grant_and_revoke_portal_role(self):
+        endpoint = reverse('player:api_user_departments_update')
+        for role, expected_status in [('admin', 200), ('user', 302)]:
+            self.client.force_login(self.admin)
+            response = self.client.post(endpoint, {'changes': json.dumps([
+                {'user_id': self.member.pk, 'department_id': self.other_department.pk, 'role': role},
+            ])})
+            self.assertEqual(response.status_code, 200)
+            self.member.refresh_from_db()
+            self.assertEqual(self.member.role, role)
+            self.assertEqual(self.member.department_id, self.other_department.pk)
+            self.assertFalse(self.member.is_superuser)
+            self.assertFalse(self.member.is_staff)
+            self.client.force_login(self.member)
+            self.assertEqual(self.client.get(reverse('player:admin_panel')).status_code, expected_status)
+
+    def test_role_validation_and_self_demotion_are_atomic(self):
+        endpoint = reverse('player:api_user_departments_update')
+        for target, role in [(self.member, 'superuser'), (self.admin, 'user'), (self.member, None)]:
+            response = self.client.post(endpoint, {'changes': json.dumps([
+                {'user_id': self.outsider.pk, 'department_id': None, 'role': 'admin'},
+                {'user_id': target.pk, 'department_id': None, 'role': role},
+            ])})
+            self.assertEqual(response.status_code, 400)
+            self.outsider.refresh_from_db()
+            self.assertEqual(self.outsider.role, 'user')
+            self.assertEqual(self.outsider.department_id, self.other_department.pk)
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.role, 'admin')
+
+    def test_user_cannot_promote_self_and_department_edit_preserves_role(self):
+        endpoint = reverse('player:api_user_departments_update')
+        self.client.force_login(self.member)
+        response = self.client.post(endpoint, {'changes': json.dumps([
+            {'user_id': self.member.pk, 'department_id': None, 'role': 'admin'},
+        ])})
+        self.assertEqual(response.status_code, 403)
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.role, 'user')
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.post(endpoint, {'changes': json.dumps([
+            {'user_id': self.admin.pk, 'department_id': self.department.pk},
+        ])}).status_code, 200)
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.role, 'admin')
+
     def test_department_changes_take_effect_on_next_request(self):
         endpoint = reverse('player:api_user_department_update', args=[self.member.pk])
         self.client.post(endpoint, {'department': self.other_department.pk})
@@ -280,7 +377,7 @@ class DepartmentAccessTests(TestCase):
 
     def test_admin_forms_render_current_access_and_departments(self):
         page = self.client.get(reverse('player:admin_panel'))
-        self.assertContains(page, 'Пользователи и отделы')
+        self.assertContains(page, 'Пользователи, отделы и роли')
         self.assertContains(page, 'Кто видит лекцию')
         self.assertContains(page, 'data-visibility="departments"')
         self.assertContains(page, f'data-departments="{self.department.pk}"')

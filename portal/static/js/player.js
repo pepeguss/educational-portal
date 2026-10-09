@@ -19,7 +19,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const pdfjs = await pdfLibrary.catch(error => { pdfLibrary = null; throw error; });
     if (current !== revision) return;
     pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs';
-    const task = pdfjs.getDocument({ url: fileUrl, isEvalSupported: false });
+    const task = pdfjs.getDocument({
+      url: fileUrl,
+      isEvalSupported: false,
+      stopAtErrors: true,
+      // JPEG 2000 scans require the OpenJPEG decoder shipped with this PDF.js version.
+      wasmUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/wasm/',
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/standard_fonts/',
+    });
     let observer;
     cleanup = () => {
       observer?.disconnect();

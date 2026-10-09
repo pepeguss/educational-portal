@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, FileResponse
@@ -111,6 +113,57 @@ def api_user_department_update(request, user_id):
     user.department = department
     user.save(update_fields=['department'])
     return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def api_user_departments_update(request):
+    if request.user.role != 'admin':
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    try:
+        changes = json.loads(request.POST.get('changes', ''))
+        if not isinstance(changes, list) or not changes:
+            raise ValueError
+        assignments = {}
+        roles = {}
+        for change in changes:
+            if not isinstance(change, dict):
+                raise ValueError
+            user_id = change.get('user_id')
+            department_id = change.get('department_id')
+            if type(user_id) is not int or not 0 < user_id <= 2**63 - 1 or user_id in assignments:
+                raise ValueError
+            if 'department_id' not in change or (department_id is not None and (
+                type(department_id) is not int or not 0 < department_id <= 2**63 - 1
+            )):
+                raise ValueError
+            assignments[user_id] = department_id
+            if 'role' in change:
+                if change['role'] not in ('user', 'admin'):
+                    raise ValueError
+                if user_id == request.user.pk and change['role'] != 'admin':
+                    return JsonResponse({'error': 'Нельзя снять роль администратора у своего аккаунта.'}, status=400)
+                roles[user_id] = change['role']
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Некорректный список отделов или ролей пользователей.'}, status=400)
+
+    try:
+        with transaction.atomic():
+            users = list(User.objects.select_for_update().filter(pk__in=assignments))
+            department_ids = {value for value in assignments.values() if value is not None}
+            if len(users) != len(assignments) or Department.objects.filter(pk__in=department_ids).count() != len(department_ids):
+                return JsonResponse({'error': 'Пользователь или отдел больше не существует. Обновите страницу.'}, status=400)
+            for user in users:
+                user.department_id = assignments[user.pk]
+            User.objects.bulk_update(users, ['department'], batch_size=200)
+            role_users = [user for user in users if user.pk in roles]
+            for user in role_users:
+                user.role = roles[user.pk]
+            if role_users:
+                User.objects.bulk_update(role_users, ['role'], batch_size=200)
+    except IntegrityError:
+        return JsonResponse({'error': 'Состав отделов изменился. Обновите страницу и повторите сохранение.'}, status=400)
+    return JsonResponse({'ok': True, 'updated': len(users)})
 
 
 def lecture_access(request, lecture=None):

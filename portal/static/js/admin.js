@@ -141,26 +141,69 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.querySelectorAll('[data-user-department-form]').forEach(departmentForm => {
-    departmentForm.addEventListener('submit', async (event) => {
+  const departmentsForm = document.getElementById('user-departments-form');
+  const departmentSelects = Array.from(departmentsForm.querySelectorAll('select[data-user-id]'));
+  const departmentSave = document.getElementById('save-departments');
+  const departmentStatus = document.getElementById('departments-status');
+  const departmentError = document.getElementById('departments-error');
+  const savedDepartments = new Map(departmentSelects.map(select => [select, select.value]));
+  const roleSelects = new Map(Array.from(departmentsForm.querySelectorAll('[data-user-role]'), select => [select.dataset.userRole, select]));
+  const savedRoles = new Map(Array.from(roleSelects, ([id, select]) => [id, select.value]));
+  let departmentsSaving = false;
+  const changedDepartments = () => departmentSelects.filter(select =>
+    select.value !== savedDepartments.get(select) || roleSelects.get(select.dataset.userId).value !== savedRoles.get(select.dataset.userId)
+  );
+
+  departmentsForm.addEventListener('change', () => {
+    const count = changedDepartments().length;
+    departmentSave.disabled = departmentsSaving || count === 0;
+    departmentStatus.textContent = count ? `Несохранённых изменений: ${count}` : 'Нет изменений';
+    showError(departmentError);
+  });
+
+  window.addEventListener('beforeunload', event => {
+    if (changedDepartments().length) {
       event.preventDefault();
-      const select = departmentForm.elements.department;
-      const button = departmentForm.querySelector('button');
-      if (button.disabled) return;
-      const errorElement = departmentForm.querySelector('[data-department-error]');
-      button.disabled = true;
-      select.disabled = true;
-      showError(errorElement);
-      try {
-        await post(departmentForm.action, { department: select.value });
-        location.reload();
-      } catch (error) {
-        showError(errorElement, error.message);
-      } finally {
-        button.disabled = false;
-        select.disabled = false;
-      }
-    });
+      event.returnValue = '';
+    }
+  });
+
+  departmentsForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const changed = changedDepartments();
+    if (departmentsSaving || !changed.length) return;
+    const changes = changed.map(select => ({
+      user_id: Number(select.dataset.userId),
+      department_id: select.value ? Number(select.value) : null,
+      ...(roleSelects.get(select.dataset.userId).value !== savedRoles.get(select.dataset.userId)
+        ? { role: roleSelects.get(select.dataset.userId).value } : {}),
+    }));
+    departmentsSaving = true;
+    departmentSave.disabled = true;
+    departmentSelects.forEach(select => { select.disabled = true; });
+    roleSelects.forEach(select => { select.disabled = true; });
+    departmentSave.textContent = 'Сохранение…';
+    showError(departmentError);
+    try {
+      await post(departmentsForm.action, { changes: JSON.stringify(changes) });
+      changed.forEach(select => {
+        savedDepartments.set(select, select.value);
+        savedRoles.set(select.dataset.userId, roleSelects.get(select.dataset.userId).value);
+      });
+      departmentStatus.textContent = `Изменения сохранены: ${changed.length}`;
+      document.querySelectorAll('[data-department-count]').forEach(counter => {
+        const count = departmentSelects.filter(select => select.value === counter.dataset.departmentCount).length;
+        counter.textContent = `${count} польз.`;
+      });
+    } catch (error) {
+      showError(departmentError, error.message);
+    } finally {
+      departmentsSaving = false;
+      departmentSelects.forEach(select => { select.disabled = false; });
+      roleSelects.forEach(select => { select.disabled = select.hasAttribute('data-own-role'); });
+      departmentSave.textContent = 'Сохранить изменения';
+      departmentSave.disabled = changedDepartments().length === 0;
+    }
   });
 
   // Разметка файлов хранится в HTML; после изменений сохраняем список для повторного открытия.

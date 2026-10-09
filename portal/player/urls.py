@@ -10,6 +10,7 @@ urlpatterns = [
     path('admin/', views.admin_view, name='admin_panel'),
     path('api/department/create/', views.api_department_create, name='api_department_create'),
     path('api/user/<int:user_id>/department/', views.api_user_department_update, name='api_user_department_update'),
+    path('api/users/departments/', views.api_user_departments_update, name='api_user_departments_update'),
 
     path('api/section/create/', views.api_section_create, name='api_section_create'),
     path('api/section/<int:section_id>/update/', views.api_section_update, name='api_section_update'),
