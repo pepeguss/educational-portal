@@ -1,0 +1,39 @@
+{% extends "player/_learning_base.html" %}
+{% block title %}Контакты — Прииск Удерейский{% endblock %}
+{% block learning_content %}
+<main class="company-page">
+  <div class="company-content">
+    <div class="page-eyebrow">Всегда на связи</div>
+    <h1 class="company-page-title">Контакты</h1>
+    <div class="contact-intro"><p>Выберите подразделение, чтобы позвонить или написать.</p><span class="work-hours"><span aria-hidden="true">◷</span> Пн–Пт · 08:00–17:00</span></div>
+    <div class="company-grid contact-grid">
+      <section class="info-card contact-featured">
+        <span class="contact-category">Общие вопросы</span><h2>Приёмная</h2>
+        <a class="contact-phone" href="tel:+73912529410">+7 (391) 252-94-10</a>
+        <a class="contact-email" href="mailto:priisk@gmail.com">priisk@gmail.com <span aria-hidden="true">↗</span></a>
+      </section>
+      <section class="info-card">
+        <span class="contact-category">Снабжение</span><h2>Отдел закупок</h2>
+        <a class="contact-phone" href="tel:+73912529445">+7 (391) 252-94-45</a>
+      </section>
+      <section class="info-card contact-wide">
+        <div><span class="contact-category">Вопросы сотрудников</span><h2>Служба персонала</h2></div>
+        <div class="personnel-phones"><a class="contact-phone" href="tel:+79233538363">+7 (923) 353-83-63</a><a class="contact-phone" href="tel:+73912529407">+7 (391) 252-94-07</a></div>
+      </section>
+    </div>
+    <h2 class="company-section-title">Адреса и электронная почта</h2>
+    <div class="company-grid">
+      <section class="info-card office-card">
+        <span class="office-number" aria-hidden="true">01</span><span class="contact-category">Отдел кадров</span><h2>Раздолинск</h2>
+        <address>Россия, п. Раздолинск<br>ул. Лермонтова, д. 12а</address>
+        <a class="contact-email" href="mailto:ok@priisk.su">ok@priisk.su <span aria-hidden="true">↗</span></a>
+      </section>
+      <section class="info-card office-card">
+        <span class="office-number" aria-hidden="true">02</span><span class="contact-category">Служба персонала</span><h2>Красноярск</h2>
+        <address>Россия, г. Красноярск<br>ул. Копылова, д. 40</address>
+        <a class="contact-email" href="mailto:ok.kras@priisk.su">ok.kras@priisk.su <span aria-hidden="true">↗</span></a>
+      </section>
+    </div>
+  </div>
+</main>
+{% endblock %}

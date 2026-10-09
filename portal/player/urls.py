@@ -4,6 +4,8 @@ from . import views
 app_name = 'player'
 urlpatterns = [
     path('', views.index_view, name='index'),
+    path('about/', views.about_view, name='about'),
+    path('contacts/', views.contacts_view, name='contacts'),
     path('lecture/<int:lecture_id>/', views.lecture_view, name='lecture'),
     path('admin/', views.admin_view, name='admin_panel'),
     path('api/department/create/', views.api_department_create, name='api_department_create'),

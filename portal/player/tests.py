@@ -17,22 +17,24 @@ class LectureTestLinkTests(TestCase):
         self.create_url = reverse('player:api_lecture_create', args=[self.section.pk])
 
     def test_create_and_display_test_below_player(self):
-        url = 'https://example.com/test?one=1&two=2'
+        url = 'https://forms.yandex.ru/u/abc123?one=1&two=2'
         response = self.client.post(self.create_url, {
             'title': 'Лекция', 'has_test': '1', 'test_url': url,
         })
         self.assertEqual(response.status_code, 200)
         lecture = Lecture.objects.get(pk=response.json()['id'])
         self.assertEqual(lecture.test_url, url)
+        self.assertFalse(lecture.has_practice)
+        self.assertEqual(lecture.practice_task, '')
         page = self.client.get(reverse('player:lecture', args=[lecture.pk]))
-        self.assertContains(page, 'href="https://example.com/test?one=1&amp;two=2"')
-        self.assertContains(page, '<iframe src="https://example.com/test?one=1&amp;two=2"')
+        self.assertContains(page, 'href="https://forms.yandex.ru/u/abc123?one=1&amp;two=2"')
+        self.assertContains(page, '<iframe src="https://forms.yandex.ru/u/abc123?one=1&amp;two=2&amp;iframe=1"')
         html = page.content.decode()
         self.assertLess(html.index('id="viewer"'), html.index('Тест для оценки знаний'))
 
     def test_disabled_test_ignores_url_and_hides_link(self):
         response = self.client.post(self.create_url, {
-            'title': 'Лекция', 'has_test': '0', 'test_url': 'https://example.com/test',
+            'title': 'Лекция', 'has_test': '0', 'test_url': 'https://forms.yandex.ru/u/abc123',
         })
         lecture = Lecture.objects.get(pk=response.json()['id'])
         self.assertEqual(lecture.test_url, '')
@@ -63,12 +65,16 @@ class LectureTestLinkTests(TestCase):
     def test_other_host_does_not_load_yandex_script(self):
         url = 'https://forms.yandex.ru.example.com/u/abc123/'
         embed = Lecture(test_url=url).test_embed
-        self.assertEqual(embed['url'], url)
-        self.assertNotIn('script', embed)
+        self.assertIsNone(embed)
 
     def test_invalid_test_does_not_create_lecture(self):
         for url in ['', 'not a url', 'javascript:alert(1)', 'ftp://example.com/test',
-                    'https://example.com/' + 'a' * 2000]:
+                    'https://example.com/' + 'a' * 2000,
+                    'https://example.com/test', 'http://forms.yandex.ru/u/abc123',
+                    'https://forms.yandex.ru.evil.test/u/abc123',
+                    'https://forms.yandex.ru@evil.test/u/abc123',
+                    'https://forms.yandex.ru/other/abc123',
+                    'https://forms.yandex.ru:8443/u/abc123']:
             with self.subTest(url=url):
                 response = self.client.post(self.create_url, {
                     'title': 'Лекция', 'has_test': '1', 'test_url': url,
@@ -79,7 +85,7 @@ class LectureTestLinkTests(TestCase):
     def test_edit_preserve_and_remove_test(self):
         lecture = Lecture.objects.create(section=self.section, title='Лекция')
         endpoint = reverse('player:api_lecture_update', args=[lecture.pk])
-        url = 'https://example.com/test'
+        url = 'https://forms.yandex.ru/u/abc123'
         self.assertEqual(self.client.post(endpoint, {
             'has_test': '1', 'test_url': url,
         }).status_code, 200)
@@ -93,7 +99,7 @@ class LectureTestLinkTests(TestCase):
         self.assertEqual(lecture.title, 'Новое название')
         self.assertEqual(lecture.test_url, url)
         page = self.client.get(reverse('player:admin_panel'))
-        self.assertContains(page, 'data-test-url="https://example.com/test"')
+        self.assertContains(page, 'data-test-url="https://forms.yandex.ru/u/abc123"')
         self.client.post(endpoint, {'has_test': '0'})
         lecture.refresh_from_db()
         self.assertEqual(lecture.test_url, '')
@@ -102,7 +108,7 @@ class LectureTestLinkTests(TestCase):
         self.admin.role = 'user'
         self.admin.save()
         response = self.client.post(self.create_url, {
-            'title': 'Лекция', 'has_test': '1', 'test_url': 'https://example.com/test',
+            'title': 'Лекция', 'has_test': '1', 'test_url': 'https://forms.yandex.ru/u/abc123',
         })
         self.assertEqual(response.status_code, 403)
         self.assertFalse(Lecture.objects.exists())
@@ -194,7 +200,7 @@ class DepartmentAccessTests(TestCase):
             {'visibility': 'departments', 'departments': ['9' * 100]},
         ]:
             with self.subTest(data=data):
-                payload = dict(data, title='Не сохранять', has_test='1', test_url='https://example.com/test')
+                payload = dict(data, title='Не сохранять', has_test='1', test_url='https://forms.yandex.ru/u/abc123')
                 self.assertEqual(self.client.post(
                     reverse('player:api_lecture_create', args=[self.section.pk]), payload,
                 ).status_code, 400)

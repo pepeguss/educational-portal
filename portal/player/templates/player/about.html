@@ -1,0 +1,46 @@
+{% extends "player/_learning_base.html" %}
+{% load static %}
+{% block title %}О компании — Прииск Удерейский{% endblock %}
+{% block learning_content %}
+<main class="company-page">
+  <div class="company-content">
+    <div class="page-eyebrow">Знакомство с предприятием</div>
+    <h1 class="company-page-title">О компании</h1>
+    <section class="company-hero" aria-labelledby="company-name">
+      <div>
+        <span class="company-tag">Красноярский край · С 2003 года</span>
+        <h2 id="company-name">Прииск<br>Удерейский</h2>
+        <p>Геологическое изучение, разведка и добыча россыпного золота.</p>
+      </div>
+      <div class="company-emblem"><img src="{% static 'img/logo.png' %}" alt="Логотип Прииска Удерейского" width="180" height="180"></div>
+    </section>
+    <dl class="company-stats">
+      <div><dt>Год основания</dt><dd>2003</dd></div>
+      <div><dt>Золотодобывающих участков</dt><dd>11</dd></div>
+      <div><dt>Сотрудников в команде</dt><dd>1 000<span>+</span></dd></div>
+      <div><dt>Единиц техники</dt><dd>180<span>+</span></dd></div>
+    </dl>
+    <div class="company-grid">
+      <section class="info-card">
+        <span class="page-eyebrow">Производство и развитие</span>
+        <h2>Опыт, технологии, движение вперёд</h2>
+        <p>АО «Прииск Удерейский» работает на россыпных месторождениях Красноярского края. Для добычи применяются дражный и гидромеханический способы.</p>
+        <p>Собственная геологическая служба и подрядчики ведут разведку для пополнения запасов. Развиваются проекты в Туруханском районе и Забайкальском крае.</p>
+        <p>Предприятие располагает ремонтной базой и ежегодно обновляет горную и автотранспортную технику.</p>
+      </section>
+      <section class="info-card priorities-card">
+        <span class="page-eyebrow">Наши приоритеты</span>
+        <h2>В центре внимания — люди</h2>
+        <ul class="company-priorities">
+          <li>Безопасность на рабочем месте</li>
+          <li>Профессиональный рост сотрудников</li>
+          <li>Улучшение социальных условий</li>
+          <li>Поддержка местных сообществ</li>
+          <li>Соблюдение трудового и налогового законодательства</li>
+        </ul>
+      </section>
+    </div>
+    <a class="company-next" href="{% url 'player:contacts' %}"><span>Нужна связь с подразделением?<strong>Контакты компании</strong></span><span aria-hidden="true">↗</span></a>
+  </div>
+</main>
+{% endblock %}

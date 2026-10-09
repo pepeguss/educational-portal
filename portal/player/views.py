@@ -4,7 +4,7 @@ from django.http import JsonResponse, FileResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
+from .validators import validate_yandex_form_url
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, Count
 from django.urls import reverse
@@ -34,13 +34,26 @@ def serve_media(request, path):
     return serve_file(request, obj.pk)
 
 
-@login_required
-def index_view(request):
-    lectures = Lecture.objects.visible_to(request.user)
-    sections = Section.objects.filter(lectures__in=lectures).distinct().prefetch_related(
+def learning_sections(user):
+    lectures = Lecture.objects.visible_to(user)
+    return Section.objects.filter(lectures__in=lectures).distinct().prefetch_related(
         Prefetch('lectures', queryset=lectures),
     )
-    return render(request, 'player/index.html', {'sections': sections})
+
+
+@login_required
+def index_view(request):
+    return render(request, 'player/index.html', {'sections': learning_sections(request.user)})
+
+
+@login_required
+def about_view(request):
+    return render(request, 'player/about.html', {'sections': learning_sections(request.user)})
+
+
+@login_required
+def contacts_view(request):
+    return render(request, 'player/contacts.html', {'sections': learning_sections(request.user)})
 
 @login_required
 def lecture_view(request, lecture_id):
@@ -130,10 +143,7 @@ def lecture_test_url(request, default=''):
         raise ValidationError('Укажите ссылку на тест.')
     if len(url) > 2000:
         raise ValidationError('Ссылка на тест должна быть не длиннее 2000 символов.')
-    try:
-        URLValidator(schemes=['http', 'https'])(url)
-    except ValidationError:
-        raise ValidationError('Введите корректную ссылку на тест, начиная с http:// или https://.')
+    validate_yandex_form_url(url)
     return url
 
 

@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from .validators import validate_yandex_form_url
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 import re
 
@@ -30,7 +32,9 @@ class Lecture(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='lectures', verbose_name='Раздел')
     title = models.CharField('Название лекции', max_length=200)
     description = models.TextField('Описание', blank=True)
-    test_url = models.URLField('Ссылка на тест для оценки знаний', max_length=2000, blank=True)
+    test_url = models.URLField('Ссылка на тест для оценки знаний', max_length=2000, blank=True, validators=[validate_yandex_form_url])
+    has_practice = models.BooleanField('Есть практическое задание', default=False)
+    practice_task = models.TextField('Практическое задание', blank=True, default='')
     order = models.PositiveIntegerField('Порядок', default=0)
     is_public = models.BooleanField('Доступна всем пользователям', default=True)
     departments = models.ManyToManyField(
@@ -51,6 +55,10 @@ class Lecture(models.Model):
     def test_embed(self):
         if not self.test_url:
             return None
+        try:
+            validate_yandex_form_url(self.test_url)
+        except ValidationError:
+            return None
         parts = urlsplit(self.test_url)
         form = re.fullmatch(r'/(?:cloud/)?u/([a-zA-Z0-9_-]+)/?', parts.path)
         if parts.hostname in ('forms.yandex.ru', 'forms.yandex.com') and form:
@@ -62,7 +70,7 @@ class Lecture(models.Model):
                 'name': f'ya-form-{form.group(1)}',
                 'script': f'https://{parts.hostname}/_static/embed.js',
             }
-        return {'url': self.test_url, 'name': f'lecture-test-{self.pk}'}
+        return None
 
 class LectureFile(models.Model):
     TYPE_CHOICES = (

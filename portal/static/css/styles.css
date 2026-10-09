@@ -1,6 +1,8 @@
 html, body { height: 100%; }
 body { font-family: 'Inter', system-ui, sans-serif; background: #f6f7f8; color: #1a1d23; }
 
+.lecture-player { max-width: 920px; margin-inline: auto; }
+
 .protected-viewer {
   user-select: none; -webkit-user-select: none; -moz-user-select: none;
   -webkit-touch-callout: none;
@@ -16,8 +18,8 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f6f7f8; color: 
 /* Document pages scroll inside the player, without a native PDF toolbar. */
 #viewer.document-viewer { min-height: 0; }
 .document-scroll {
-  height: 75vh;
-  height: 75dvh;
+  height: 65vh;
+  height: 65dvh;
   overflow: auto;
   background: #e6e8eb;
   padding: 16px;
@@ -30,7 +32,7 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f6f7f8; color: 
 .pdf-page canvas {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
 }
 .docx-content { width: max-content; min-width: 100%; }
 .docx-content .docx-wrapper { padding: 0; background: transparent; }
@@ -48,3 +50,83 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f6f7f8; color: 
 
 .fade-in { animation: fade .25s ease; }
 @keyframes fade { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+/* Company pages share the learning navigation. */
+.portal-header { min-height: 72px; display: flex; align-items: center; gap: 24px; padding: 0 24px; }
+.portal-brand { width: 272px; flex-shrink: 0; }
+.portal-nav { display: flex; align-items: center; align-self: stretch; gap: 28px; margin-right: auto; }
+.portal-nav a { display: flex; align-items: center; position: relative; white-space: nowrap; font-size: 14px; font-weight: 600; color: #667080; padding: 12px 0; }
+.portal-nav a:hover, .portal-nav a[aria-current] { color: #1a1d23; }
+.portal-nav a[aria-current]::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: #f5b301; border-radius: 3px 3px 0 0; }
+.portal-nav a:focus-visible, .company-page a:focus-visible { outline: 2px solid #b58000; outline-offset: 5px; border-radius: 4px; }
+.learning-layout { display: flex; flex: 1; min-width: 0; }
+.learning-sidebar { width: 320px; flex-shrink: 0; }
+.company-page { flex: 1; min-width: 0; padding: 36px 40px 56px; }
+.company-content { max-width: 1120px; margin: 0 auto; }
+.page-eyebrow { display: block; color: #866200; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.company-page-title { font-size: 32px; font-weight: 650; letter-spacing: -.035em; margin: 6px 0 24px; }
+.company-hero { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 24px; overflow: hidden; padding: 36px 40px; border-radius: 22px; background: radial-gradient(ellipse at 100% 0, #4b4735, transparent 65%), #1a1d23; color: white; }
+.company-tag { color: #f5ce65; font-size: 12px; }
+.company-hero h2 { font-size: clamp(32px, 3.5vw, 52px); font-weight: 600; line-height: 1.08; letter-spacing: -.035em; margin: 18px 0; }
+.company-hero p { color: #d4d6d9; max-width: 380px; font-size: 14px; line-height: 1.7; }
+.company-emblem { flex-shrink: 0; padding: 18px; border: 1px solid #ffffff20; border-radius: 50%; background: #ffffff08; }
+.company-emblem img { width: 160px; height: 160px; object-fit: contain; }
+.company-stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); margin: 20px 0 28px; border: 1px solid #e5e7eb; border-radius: 16px; background: white; }
+.company-stats div { display: flex; flex-direction: column-reverse; padding: 22px; gap: 6px; }
+.company-stats div + div { border-left: 1px solid #e5e7eb; }
+.company-stats dt { color: #6b7280; font-size: 11px; }
+.company-stats dd { font-size: 30px; line-height: 1.2; font-weight: 650; letter-spacing: -.035em; }
+.company-stats dd span { color: #a87900; }
+.company-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.info-card { padding: 28px; border: 1px solid #e5e7eb; border-radius: 18px; background: #fff; min-width: 0; }
+.info-card h2 { font-size: 20px; font-weight: 600; line-height: 1.4; margin: 8px 0 18px; letter-spacing: -.02em; }
+.info-card p { color: #626974; font-size: 14px; line-height: 1.8; margin-top: 12px; }
+.priorities-card { background: #fffcf3; border-color: #ebe3cc; }
+.company-priorities { display: grid; gap: 16px; margin-top: 20px; }
+.company-priorities li { display: flex; align-items: baseline; gap: 12px; font-size: 14px; line-height: 1.6; }
+.company-priorities li::before { content: ''; width: 7px; height: 7px; flex-shrink: 0; background: #dca300; border-radius: 50%; }
+.company-next { margin-top: 24px; padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; border-radius: 14px; border: 1px solid #e5e7eb; background: #fff; color: #6b7280; font-size: 12px; }
+.company-next strong { display: block; color: #1a1d23; font-size: 15px; margin-top: 4px; }
+.company-next:hover { border-color: #d99c00; }
+.company-next > span:last-child { color: #9d7200; font-size: 24px; }
+.contact-intro { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin: -8px 0 28px; color: #6b7280; font-size: 14px; }
+.work-hours { padding: 9px 14px; color: #665323; background: #fff5d9; border-radius: 24px; font-size: 12px; white-space: nowrap; }
+.contact-category { font-size: 11px; font-weight: 600; color: #747b86; text-transform: uppercase; letter-spacing: .08em; }
+.contact-featured { background: #1a1d23; color: #fff; border-color: #1a1d23; }
+.contact-featured .contact-category { color: #d5bd7b; }
+.contact-phone { display: block; width: fit-content; font-size: clamp(17px, 1.7vw, 23px); font-weight: 600; letter-spacing: -.025em; margin: 12px 0; }
+.contact-phone:hover { color: #b27f00; }
+.contact-email { display: flex; align-items: center; justify-content: space-between; gap: 16px; color: #876100; font-size: 14px; padding-top: 18px; margin-top: 22px; border-top: 1px solid #e5e7eb; overflow-wrap: anywhere; }
+.contact-email:hover { text-decoration: underline; }
+.contact-featured .contact-email { color: #f6ce66; border-color: #ffffff25; }
+.contact-wide { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.contact-wide h2 { margin-bottom: 0; }
+.personnel-phones { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.company-section-title { font-size: 20px; font-weight: 600; margin: 32px 0 18px; }
+.office-card { position: relative; }
+.office-card address { font-style: normal; font-size: 14px; line-height: 1.8; color: #626974; }
+.office-number { position: absolute; right: 28px; top: 24px; color: #d8dce1; font-size: 28px; font-weight: 600; }
+@media (max-width: 1100px) {
+  .portal-brand { width: auto; }
+  .learning-sidebar { width: 260px; }
+  .company-page { padding: 28px 24px; }
+  .company-hero { padding: 28px; }
+  .company-emblem img { width: 100px; height: 100px; }
+  .company-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .company-stats div:nth-child(3) { border-left: 0; }
+  .company-stats div:nth-child(n+3) { border-top: 1px solid #e5e7eb; }
+  .company-grid { grid-template-columns: 1fr; }
+  .contact-wide { flex-wrap: wrap; }
+}
+@media (max-width: 760px) {
+  .portal-header { flex-wrap: wrap; gap: 0 12px; padding: 8px 16px 0; }
+  .portal-brand { margin-right: auto; }
+  .portal-nav { order: 3; width: 100%; gap: 28px; min-height: 44px; }
+  .learning-layout { flex-direction: column; }
+  .learning-sidebar { width: 100%; max-height: 240px; border-right: 0; border-bottom: 1px solid #e5e7eb; }
+  .company-page { padding: 24px 16px 36px; }
+  .company-page-title { font-size: 28px; }
+  .company-hero { padding: 24px; }
+  .company-emblem { display: none; }
+  .info-card { padding: 22px; }
+}

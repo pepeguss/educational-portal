@@ -1,0 +1,32 @@
+{% extends "player/_authed_base.html" %}
+{% block content %}
+<div class="learning-layout">
+  <!-- Сайдбар -->
+  <aside class="learning-sidebar bg-white border-r border-gray-200 overflow-y-auto">
+    <div class="p-5">
+      <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Разделы обучения</h3>
+      <div class="space-y-4">
+        {% for section in sections %}
+          <div class="border border-gray-200 rounded-xl overflow-hidden">
+            <div class="px-4 py-3 bg-graphite-900 text-white">
+              <div class="text-sm font-semibold">{{ section.title }}</div>
+              <div class="text-xs text-gray-400">{{ section.lectures.count }} лекц.</div>
+            </div>
+            {% for lecture in section.lectures.all %}
+              <a href="{% url 'player:lecture' lecture.id %}"
+                 class="block w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-amber-50 hover:text-amber-700 border-t border-gray-100 transition flex items-center justify-between group">
+                <span class="truncate">{{ lecture.title }}</span>
+                <svg class="w-4 h-4 text-gray-300 group-hover:text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+              </a>
+            {% endfor %}
+          </div>
+        {% empty %}
+          <p class="text-sm text-gray-400">Нет доступных лекций</p>
+        {% endfor %}
+      </div>
+    </div>
+  </aside>
+
+  {% block learning_content %}{% endblock %}
+</div>
+{% endblock %}

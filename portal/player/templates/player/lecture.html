@@ -18,6 +18,7 @@
       {% endif %}
     </div>
 
+    <div class="lecture-player">
     <!-- Вкладки файлов -->
     <div id="files-tabs" class="flex flex-wrap gap-2 mb-4">
       {% for file in lecture.files.all %}
@@ -32,9 +33,9 @@
     </div>
 
     <!-- Плеер -->
-    <div id="viewer" tabindex="0" aria-label="Просмотр материалов лекции" class="protected-viewer bg-white rounded-xl border border-gray-200 shadow-sm min-h-[500px] relative overflow-hidden">
+    <div id="viewer" tabindex="0" aria-label="Просмотр материалов лекции" class="protected-viewer bg-white rounded-xl border border-gray-200 shadow-sm min-h-[420px] relative overflow-hidden">
       {% if not lecture.files.exists %}
-        <div class="flex items-center justify-center h-[500px] text-gray-400">
+        <div class="flex items-center justify-center h-[420px] text-gray-400">
           <div class="text-center">
             <p>Материалы ещё не загружены</p>
           </div>
@@ -42,6 +43,7 @@
       {% endif %}
     </div>
     <p class="text-xs text-gray-400 mt-3 text-center">Материалы доступны для просмотра. Выделение, копирование и меню скачивания в плеере отключены.</p>
+    </div>
     {% with test=lecture.test_embed %}
       {% if test %}
         <section class="mt-8" aria-labelledby="lecture-test-title">
@@ -63,5 +65,5 @@
 {% block extra_scripts %}
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
-  <script src="{% static 'js/player.js' %}?v=2"></script>
+  <script src="{% static 'js/player.js' %}?v=4"></script>
 {% endblock %}

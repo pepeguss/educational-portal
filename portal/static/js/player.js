@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const scroll = document.createElement('div');
     scroll.className = 'document-scroll';
     viewer.replaceChildren(scroll);
-    const width = Math.max(200, scroll.clientWidth - 32);
+    // Keep PDF pages closer to their natural size instead of stretching across the player.
+    const width = Math.min(760, Math.max(1, scroll.clientWidth - 32));
     let queue = Promise.resolve();
     // Render nearby pages one at a time, without a selectable text or annotation layer.
     observer = new IntersectionObserver(entries => {
@@ -42,9 +43,10 @@ document.addEventListener('DOMContentLoaded', () => {
           const page = await pdf.getPage(Number(entry.target.dataset.page));
           if (current !== revision) return;
           const viewport = page.getViewport({ scale: 1 });
-          const scale = Math.min(width / viewport.width, 1.5);
+          const scale = Math.min(width / viewport.width, 1.25);
           const display = page.getViewport({ scale });
-          const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+          // Render extra pixels even on standard displays, then downsample for crisp text.
+          const pixelRatio = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
           const canvas = document.createElement('canvas');
           canvas.width = Math.ceil(display.width * pixelRatio);
           canvas.height = Math.ceil(display.height * pixelRatio);
@@ -89,7 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
     cleanup = () => {};
     const { fileType, fileUrl, fileName } = data;
     viewer.classList.toggle('document-viewer', ['pdf', 'docx'].includes(fileType));
-    viewer.innerHTML = '<div class="flex items-center justify-center h-[500px] text-gray-400">Загрузка…</div>';
+    viewer.innerHTML = '<div class="flex items-center justify-center h-[420px] text-gray-400">Загрузка…</div>';
 
     if (fileType === 'pdf') {
       try {
@@ -129,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     else if (fileType === 'mp4') {
       viewer.innerHTML = `
-        <div class="bg-black h-[75vh] flex items-center justify-center">
+        <div class="bg-black h-[65vh] flex items-center justify-center">
           <video src="${fileUrl}" controls controlslist="nodownload noremoteplayback"
                  disablepictureinpicture oncontextmenu="return false"
                  class="max-h-full max-w-full"></video>
@@ -137,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     else if (fileType === 'mp3') {
       viewer.innerHTML = `
-        <div class="p-10 flex flex-col items-center justify-center h-[50vh] bg-gradient-to-br from-graphite-900 to-graphite-700 text-white">
+        <div class="p-10 flex flex-col items-center justify-center h-[42vh] bg-gradient-to-br from-graphite-900 to-graphite-700 text-white">
           <div class="w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center mb-6">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1a1d23" stroke-width="2"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
           </div>

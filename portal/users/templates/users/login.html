@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Вход — Прииск Удерейский{% endblock %}
 
 {% block body %}
@@ -7,7 +8,7 @@
     {% csrf_token %}
 
     <div class="flex items-center gap-3">
-      <div class="w-11 h-11 rounded-lg bg-amber-500 flex items-center justify-center text-graphite-900 font-bold text-xl">П</div>
+      <img src="{% static 'img/logo.png' %}" alt="Логотип Прииска Удерейского" width="44" height="44" class="w-11 h-11 object-contain shrink-0">
       <div>
         <h1 class="text-lg font-semibold text-graphite-900 leading-tight">Прииск Удерейский</h1>
         <p class="text-xs text-gray-500">Образовательный портал</p>
