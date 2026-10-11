@@ -3,8 +3,8 @@
 {% block title %}Вход — Прииск Удерейский{% endblock %}
 
 {% block body %}
-<section class="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-graphite-900 to-graphite-500">
-  <form method="post" class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-5 fade-in">
+<section class="auth-page min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-graphite-900 to-graphite-500">
+  <form method="post" class="auth-card w-full max-w-md bg-white rounded-2xl shadow-xl space-y-5 fade-in">
     {% csrf_token %}
 
     <div class="flex items-center gap-3">

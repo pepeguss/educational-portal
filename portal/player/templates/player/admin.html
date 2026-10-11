@@ -3,10 +3,10 @@
 {% block title %}Админ-панель — Прииск Удерейский{% endblock %}
 
 {% block content %}
-<main class="flex-1 p-8 overflow-y-auto">
+<main class="portal-main admin-page flex-1 overflow-y-auto">
   <div class="max-w-5xl mx-auto">
     <section class="mb-8" aria-labelledby="departments-title">
-      <div class="flex items-center justify-between gap-3 mb-4">
+      <div class="admin-heading flex items-center justify-between gap-3 mb-4">
         <h2 id="departments-title" class="text-2xl font-semibold">Отделы</h2>
         <button data-act="add-department" class="px-4 py-2 rounded-lg bg-amber-500 font-medium hover:bg-amber-600">+ Отдел</button>
       </div>
@@ -30,7 +30,7 @@
         <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
         {% for portal_user in portal_users %}
           <div class="border-t border-gray-100 pt-3">
-            <div class="flex flex-wrap items-center gap-3">
+            <div class="admin-user flex flex-wrap items-center gap-3">
               <label for="user-department-{{ portal_user.id }}" class="flex-1 min-w-0">
                 <span class="block font-medium break-words">{{ portal_user.full_name|default:portal_user.username }}</span>
                 <span class="block text-xs text-gray-500">{{ portal_user.username }}</span>
@@ -59,7 +59,7 @@
       </form>
     </details>
 
-    <div class="flex items-center justify-between mb-6">
+    <div class="admin-heading flex items-center justify-between mb-6">
       <h1 class="text-2xl font-semibold">Разделы и лекции</h1>
       <button id="btn-add-section" data-act="add-section" class="px-4 py-2 rounded-lg bg-amber-500 text-graphite-900 font-medium hover:bg-amber-600 transition">+ Раздел</button>
     </div>
@@ -67,12 +67,12 @@
     <div id="admin-sections" class="space-y-4">
       {% for section in sections %}
         <div class="bg-white rounded-xl border border-gray-200 p-5" data-section-id="{{ section.id }}">
-          <div class="flex items-center justify-between mb-4">
+          <div class="admin-heading flex items-center justify-between mb-4">
             <div>
               <h3 class="text-lg font-semibold text-graphite-900 section-title">{{ section.title }}</h3>
               <p class="text-xs text-gray-500">{{ section.lectures.count }} лекций</p>
             </div>
-            <div class="flex gap-2">
+            <div class="admin-actions flex gap-2">
               <button data-act="edit-section" class="px-3 py-1.5 text-xs rounded-lg bg-white border border-gray-200 hover:border-amber-500">Переименовать</button>
               <button data-act="add-lecture" class="px-3 py-1.5 text-xs rounded-lg bg-graphite-900 text-white hover:bg-graphite-700">+ Лекция</button>
               <button data-act="del-section" class="px-3 py-1.5 text-xs rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50">Удалить раздел</button>
@@ -81,13 +81,13 @@
 
           <div class="space-y-2">
             {% for lecture in section.lectures.all %}
-              <div class="bg-graphite-50 rounded-lg p-3 flex items-center justify-between" data-lecture-id="{{ lecture.id }}" data-description="{{ lecture.description }}" data-test-url="{{ lecture.test_url }}" data-visibility="{% if lecture.is_public %}all{% else %}departments{% endif %}" data-departments="{% for department in lecture.departments.all %}{{ department.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+              <div class="bg-graphite-50 rounded-lg p-3 admin-lecture flex items-center justify-between" data-lecture-id="{{ lecture.id }}" data-description="{{ lecture.description }}" data-test-url="{{ lecture.test_url }}" data-visibility="{% if lecture.is_public %}all{% else %}departments{% endif %}" data-departments="{% for department in lecture.departments.all %}{{ department.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
                 <div>
                   <div class="font-medium text-graphite-900 lecture-title">{{ lecture.title }}</div>
                   <div class="text-xs text-gray-500"><span data-file-count>{{ lecture.files.count }}</span> файл(ов)</div>
                   <div class="text-xs text-gray-500 mt-1">Доступ: {% if lecture.is_public %}все пользователи{% else %}{% for department in lecture.departments.all %}{{ department.name }}{% if not forloop.last %}, {% endif %}{% empty %}только администраторы{% endfor %}{% endif %}</div>
                 </div>
-                <div class="flex gap-2">
+                <div class="admin-actions flex gap-2">
                   <button data-act="edit-lecture" class="px-3 py-1.5 text-xs rounded-lg bg-white border border-gray-200 hover:border-amber-500">Изменить</button>
                   <button data-act="files" class="px-3 py-1.5 text-xs rounded-lg bg-amber-500 text-graphite-900 hover:bg-amber-600">Файлы</button>
                   <button data-act="del-lecture" class="px-3 py-1.5 text-xs rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50">Удалить</button>

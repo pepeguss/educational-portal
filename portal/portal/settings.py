@@ -28,7 +28,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "pepegus.fun",
     "localhost",
-    "127.0.0.1"
+    "127.0.0.1",
+    "192.168.31.115"
 ]
 
 CSRF_TRUSTED_ORIGINS = [

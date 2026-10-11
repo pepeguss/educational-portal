@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     scroll.className = 'document-scroll';
     viewer.replaceChildren(scroll);
     // Keep PDF pages closer to their natural size instead of stretching across the player.
-    const width = Math.min(760, Math.max(1, scroll.clientWidth - 32));
+    const padding = getComputedStyle(scroll);
+    const width = Math.min(760, Math.max(1, scroll.clientWidth - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight)));
     let queue = Promise.resolve();
     // Render nearby pages one at a time, without a selectable text or annotation layer.
     observer = new IntersectionObserver(entries => {
@@ -100,7 +101,8 @@ document.addEventListener('DOMContentLoaded', () => {
     cleanup = () => {};
     const { fileType, fileUrl, fileName } = data;
     viewer.classList.toggle('document-viewer', ['pdf', 'docx'].includes(fileType));
-    viewer.innerHTML = '<div class="flex items-center justify-center h-[420px] text-gray-400">Загрузка…</div>';
+    viewer.classList.toggle('media-viewer', ['mp4', 'mp3'].includes(fileType));
+    viewer.innerHTML = '<div class="viewer-placeholder flex items-center justify-center h-[420px] text-gray-400">Загрузка…</div>';
 
     if (fileType === 'pdf') {
       try {
@@ -112,7 +114,8 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (fileType === 'docx') {
       try {
         const controller = new AbortController();
-        cleanup = () => controller.abort();
+        let resizeObserver;
+        cleanup = () => { controller.abort(); resizeObserver?.disconnect(); };
         const res = await fetch(fileUrl, { signal: controller.signal });
         if (!res.ok) throw new Error('Не удалось загрузить файл.');
         const buf = await res.arrayBuffer();
@@ -134,21 +137,43 @@ document.addEventListener('DOMContentLoaded', () => {
           link.removeAttribute('tabindex');
         });
         viewer.replaceChildren(scroll);
+        // Scale the original page layout to the available width, including on rotation.
+        const pages = Array.from(content.querySelectorAll('section.docx'), page => {
+          const frame = document.createElement('div');
+          frame.className = 'docx-page';
+          page.before(frame);
+          frame.append(page);
+          return { page, frame };
+        });
+        const fitPages = () => {
+          const padding = getComputedStyle(scroll);
+          const available = Math.max(1, scroll.clientWidth - parseFloat(padding.paddingLeft) - parseFloat(padding.paddingRight));
+          for (const { page, frame } of pages) {
+            const scale = Math.min(1, available / Math.max(1, page.offsetWidth));
+            page.style.transform = `scale(${scale})`;
+            frame.style.width = `${page.offsetWidth * scale}px`;
+            frame.style.height = `${page.offsetHeight * scale}px`;
+          }
+        };
+        resizeObserver = new ResizeObserver(fitPages);
+        resizeObserver.observe(scroll);
+        pages.forEach(({ page }) => resizeObserver.observe(page));
+        fitPages();
       } catch (e) {
         if (current === revision) showError(e);
       }
     }
     else if (fileType === 'mp4') {
       viewer.innerHTML = `
-        <div class="bg-black h-[65vh] flex items-center justify-center">
+        <div class="video-stage">
           <video src="${fileUrl}" controls controlslist="nodownload noremoteplayback"
-                 disablepictureinpicture oncontextmenu="return false"
+                 playsinline disablepictureinpicture oncontextmenu="return false"
                  class="max-h-full max-w-full"></video>
         </div>`;
     }
     else if (fileType === 'mp3') {
       viewer.innerHTML = `
-        <div class="p-10 flex flex-col items-center justify-center h-[42vh] bg-gradient-to-br from-graphite-900 to-graphite-700 text-white">
+        <div class="audio-stage flex flex-col items-center justify-center bg-gradient-to-br from-graphite-900 to-graphite-700 text-white">
           <div class="w-24 h-24 rounded-full bg-amber-500 flex items-center justify-center mb-6">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1a1d23" stroke-width="2"><path d="M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>
           </div>
