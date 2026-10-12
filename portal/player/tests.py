@@ -1,3 +1,4 @@
+import json
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
@@ -7,6 +8,69 @@ from django.urls import reverse
 
 from users.models import Department
 from .models import Lecture, LectureFile, Section
+
+
+class UserAccessUpdateTests(TestCase):
+    def setUp(self):
+        users = get_user_model()
+        self.admin = users.objects.create_user(username='admin', role='admin')
+        self.member = users.objects.create_user(username='member')
+        self.department = Department.objects.create(name='Отдел')
+        self.url = reverse('player:api_users_update')
+        self.client.force_login(self.admin)
+
+    def update(self, changes):
+        return self.client.post(self.url, {'users': json.dumps(changes)})
+
+    def change(self, user, role, department=None):
+        return {'id': user.pk, 'role': role, 'department': department}
+
+    def test_save_departments_and_transfer_admin_rights_together(self):
+        response = self.update([
+            self.change(self.admin, 'user'),
+            self.change(self.member, 'admin', self.department.pk),
+        ])
+        self.assertEqual(response.status_code, 200)
+        self.admin.refresh_from_db()
+        self.member.refresh_from_db()
+        self.assertEqual(self.admin.role, 'user')
+        self.assertEqual(self.member.role, 'admin')
+        self.assertEqual(self.member.department, self.department)
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.get(reverse('player:admin_panel')).status_code, 200)
+        self.assertEqual(self.update([self.change(self.admin, 'user')]).status_code, 200)
+
+    def test_non_admin_cannot_change_permissions(self):
+        self.client.force_login(self.member)
+        self.assertEqual(self.update([self.change(self.member, 'admin')]).status_code, 403)
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.role, 'user')
+
+    def test_invalid_batch_does_not_apply_any_changes(self):
+        for invalid in [
+            self.change(self.admin, 'invalid'),
+            self.change(self.admin, 'admin', 999999),
+            {'id': 999999, 'role': 'admin', 'department': None},
+            {'id': self.admin.pk, 'role': 'admin'},
+        ]:
+            with self.subTest(invalid=invalid):
+                self.assertEqual(self.update([
+                    self.change(self.member, 'admin', self.department.pk), invalid,
+                ]).status_code, 400)
+                self.member.refresh_from_db()
+                self.assertEqual(self.member.role, 'user')
+                self.assertIsNone(self.member.department)
+
+    def test_last_admin_cannot_be_removed(self):
+        self.assertEqual(self.update([self.change(self.admin, 'user')]).status_code, 400)
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.role, 'admin')
+
+    def test_single_save_button_and_current_admin_checkbox(self):
+        page = self.client.get(reverse('player:admin_panel'))
+        self.assertContains(page, 'Сохранить изменения', count=1)
+        self.assertContains(page, 'name="is_admin" checked', count=1)
+        self.assertNotContains(page, 'data-user-department-form')
 
 
 class LectureTestLinkTests(TestCase):

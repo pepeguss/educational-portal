@@ -1,3 +1,5 @@
+import json
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, FileResponse, Http404
@@ -11,6 +13,7 @@ from django.urls import reverse
 from django.utils import timezone
 from users.models import Department, User
 from .models import Section, Lecture, LectureFile, PracticeSubmission, PracticeFile
+from .gold import gold_prices
 
 PRACTICE_MAX_FILE_SIZE = 20 * 1024 * 1024
 PRACTICE_MAX_FILES = 10
@@ -52,6 +55,14 @@ def index_view(request):
 @login_required
 def about_view(request):
     return render(request, 'player/about.html')
+
+
+@login_required
+def api_gold_prices(request):
+    try:
+        return JsonResponse(gold_prices())
+    except ValueError:
+        return JsonResponse({'error': 'Не удалось получить данные Банка России. Попробуйте ещё раз позже.'}, status=503)
 
 
 @login_required
@@ -120,6 +131,46 @@ def api_user_department_update(request, user_id):
             return JsonResponse({'error': 'Выбранный отдел не существует.'}, status=400)
     user.department = department
     user.save(update_fields=['department'])
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def api_users_update(request):
+    if request.user.role != 'admin':
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    try:
+        changes = json.loads(request.POST.get('users', ''))
+        if not isinstance(changes, list):
+            raise ValueError
+        ids = []
+        for change in changes:
+            if not isinstance(change, dict) or type(change.get('id')) is not int:
+                raise ValueError
+            if change.get('role') not in ('user', 'admin'):
+                raise ValueError
+            if 'department' not in change:
+                raise ValueError
+            department = change.get('department')
+            if department is not None and type(department) is not int:
+                raise ValueError
+            ids.append(change['id'])
+        if len(set(ids)) != len(ids):
+            raise ValueError
+    except (ValueError, TypeError):
+        return JsonResponse({'error': 'Некорректные данные пользователей.'}, status=400)
+    with transaction.atomic():
+        users = {user.pk: user for user in User.objects.select_for_update().filter(pk__in=ids)}
+        department_ids = {change['department'] for change in changes if change['department'] is not None}
+        if len(users) != len(ids) or Department.objects.filter(pk__in=department_ids).count() != len(department_ids):
+            return JsonResponse({'error': 'Пользователь или выбранный отдел больше не существует. Обновите страницу.'}, status=400)
+        for change in changes:
+            user = users[change['id']]
+            user.department_id = change['department']
+            user.role = change['role']
+        if not any(user.role == 'admin' for user in users.values()) and not User.objects.exclude(pk__in=ids).filter(role='admin').exists():
+            return JsonResponse({'error': 'Должен остаться хотя бы один администратор.'}, status=400)
+        User.objects.bulk_update(users.values(), ['department', 'role'])
     return JsonResponse({'ok': True})
 
 

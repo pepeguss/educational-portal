@@ -4,11 +4,13 @@ from . import views
 app_name = 'player'
 urlpatterns = [
     path('', views.index_view, name='index'),
+    path('api/gold/', views.api_gold_prices, name='api_gold_prices'),
     path('about/', views.about_view, name='about'),
     path('contacts/', views.contacts_view, name='contacts'),
     path('lecture/<int:lecture_id>/', views.lecture_view, name='lecture'),
     path('admin/', views.admin_view, name='admin_panel'),
     path('api/department/create/', views.api_department_create, name='api_department_create'),
+    path('api/users/update/', views.api_users_update, name='api_users_update'),
     path('api/user/<int:user_id>/department/', views.api_user_department_update, name='api_user_department_update'),
 
     path('api/section/create/', views.api_section_create, name='api_section_create'),

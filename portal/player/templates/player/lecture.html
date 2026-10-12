@@ -4,8 +4,7 @@
 
 {% block content %}
 <main class="flex-1 {% if lecture.has_practice %}p-4 sm:p-6{% else %}p-8{% endif %} overflow-y-auto">
-  <div class="{% if lecture.has_practice %}lecture-practice-layout{% else %}max-w-5xl mx-auto{% endif %}">
-    <div class="min-w-0">
+  <div class="{% if not lecture.has_practice %}max-w-5xl mx-auto{% endif %}">
     <a href="{% url 'player:index' %}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-graphite-900 mb-6">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       К разделам
@@ -32,6 +31,8 @@
       {% endfor %}
     </div>
 
+    <div class="{% if lecture.has_practice %}lecture-practice-layout{% endif %}">
+      <div class="min-w-0">
     <!-- Плеер -->
     <div id="viewer" tabindex="0" aria-label="Просмотр материалов лекции" class="protected-viewer bg-white rounded-xl border border-gray-200 shadow-sm min-h-[500px] relative overflow-hidden">
       {% if not lecture.files.exists %}
@@ -61,6 +62,7 @@
     {% if lecture.has_practice %}
       {% include 'player/_practice_panel.html' %}
     {% endif %}
+    </div>
   </div>
 </main>
 {% endblock %}

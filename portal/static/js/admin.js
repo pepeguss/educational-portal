@@ -165,27 +165,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.querySelectorAll('[data-user-department-form]').forEach(departmentForm => {
-    departmentForm.addEventListener('submit', async (event) => {
+  const usersForm = document.querySelector('[data-users-form]');
+  if (usersForm) {
+    const rows = Array.from(usersForm.querySelectorAll('[data-user-row]'));
+    const readUser = row => ({
+      id: Number(row.dataset.userId),
+      department: Number(row.querySelector('select').value) || null,
+      role: row.querySelector('[name=is_admin]').checked ? 'admin' : 'user',
+    });
+    const initial = new Map(rows.map(row => [row.dataset.userId, JSON.stringify(readUser(row))]));
+    usersForm.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const select = departmentForm.elements.department;
-      const button = departmentForm.querySelector('button');
+      const button = usersForm.querySelector('button[type=submit]');
       if (button.disabled) return;
-      const errorElement = departmentForm.querySelector('[data-department-error]');
-      button.disabled = true;
-      select.disabled = true;
+      const changes = rows.map(readUser).filter(user => JSON.stringify(user) !== initial.get(String(user.id)));
+      const errorElement = usersForm.querySelector('[data-users-error]');
       showError(errorElement);
+      if (!changes.length) return;
+      const controls = usersForm.querySelectorAll('select, input[type=checkbox], button');
+      controls.forEach(control => { control.disabled = true; });
+      button.textContent = 'Сохраняем…';
       try {
-        await post(departmentForm.action, { department: select.value });
+        await post(usersForm.action, { users: JSON.stringify(changes) });
         location.reload();
       } catch (error) {
         showError(errorElement, error.message);
       } finally {
-        button.disabled = false;
-        select.disabled = false;
+        controls.forEach(control => { control.disabled = false; });
+        button.textContent = 'Сохранить изменения';
       }
     });
-  });
+  }
 
   // Разметка файлов хранится в HTML; после изменений сохраняем список для повторного открытия.
   function syncFiles() {

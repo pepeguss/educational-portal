@@ -29,6 +29,40 @@ body { font-family: 'Inter', system-ui, sans-serif; background: #f6f7f8; color: 
 .portal-nav-link[aria-current="page"] { background: #fff7df; color: #92400e; }
 .portal-nav-link:focus-visible { outline: 2px solid #f5b301; outline-offset: 2px; }
 .portal-account { justify-self: end; }
+.gold-card { max-width: 1100px; margin: 24px auto 0; padding: 32px; background: linear-gradient(145deg, #fffdf7, #fff 45%); border: 1px solid #e9e5da; border-radius: 24px; box-shadow: 0 12px 40px #34291406; }
+.gold-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
+.gold-eyebrow { display: flex; align-items: center; gap: 10px; color: #a87716; font-size: 10px; font-weight: 700; letter-spacing: .13em; }
+.gold-eyebrow span { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #ecd9a6; border-radius: 9px; background: #fff7df; font-size: 15px; letter-spacing: 0; }
+.gold-heading h1 { font-size: 26px; font-weight: 600; margin-top: 14px; letter-spacing: -.03em; }
+.gold-subtitle { font-size: 12px; color: #8a9099; margin-top: 6px; }
+.gold-periods { display: flex; gap: 4px; padding: 5px; background: #f2f3f5; border-radius: 12px; }
+.gold-periods button { padding: 8px 16px; font-size: 12px; font-weight: 600; border-radius: 8px; color: #777e88; }
+.gold-periods button[aria-pressed="true"] { background: #fff; color: #a87716; box-shadow: 0 2px 5px #0000000a; }
+.gold-periods button:focus-visible, .gold-retry:focus-visible { outline: 2px solid #cf931b; outline-offset: 3px; }
+.gold-periods button:disabled { opacity: .5; }
+.gold-quote { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px; margin-top: 32px; font-size: clamp(32px, 4vw, 48px); font-weight: 600; letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
+.gold-unit { font-size: 18px; color: #9299a3; font-weight: 400; letter-spacing: 0; }
+.gold-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 12px; color: #9299a3; }
+.gold-change { border-radius: 7px; padding: 5px 9px; font-weight: 600; }
+.gold-change.up { color: #298363; background: #edf8f1; }
+.gold-change.down { color: #b55a49; background: #fff1ed; }
+.gold-chart-wrap { position: relative; margin-top: 32px; }
+#gold-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.gold-tooltip { position: absolute; pointer-events: none; background: #1a1d23; color: white; padding: 8px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; box-shadow: 0 4px 16px #0002; }
+.gold-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid #edf0f2; padding-top: 24px; gap: 16px; }
+.gold-stats span { display: block; font-size: 11px; color: #9299a3; }
+.gold-stats strong { display: block; margin-top: 7px; font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gold-footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-top: 1px solid #edf0f2; margin-top: 28px; padding-top: 18px; font-size: 11px; color: #9299a3; }
+.gold-footer a:hover { color: #a87716; }
+.gold-status:not(:empty) { margin: 24px 0; font-size: 13px; color: #777e88; }
+.gold-retry { color: #a87716; font-size: 13px; text-decoration: underline; }
+@media (max-width: 640px) {
+  .gold-card { padding: 20px; margin-top: 0; border-radius: 18px; }
+  .gold-heading h1 { font-size: 23px; }
+  .gold-stats { grid-template-columns: 1fr; gap: 14px; }
+  .gold-stats > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .gold-stats strong { font-size: 14px; }
+}
 .lecture-practice-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);

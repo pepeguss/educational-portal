@@ -3,9 +3,9 @@
 {% block title %}Главная — Прииск Удерейский{% endblock %}
 
 {% block content %}
-<div class="flex-1 flex">
+<div class="flex-1 flex flex-col md:flex-row min-w-0">
   <!-- Сайдбар -->
-  <aside class="w-80 bg-white border-r border-gray-200 overflow-y-auto">
+  <aside class="w-full md:w-80 shrink-0 bg-white border-r border-gray-200 overflow-y-auto">
     <div class="p-5">
       <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Разделы обучения</h3>
       <div class="space-y-4">
@@ -31,14 +31,42 @@
   </aside>
 
   <!-- Контент -->
-  <main class="flex-1 p-8 overflow-y-auto">
-    <div class="max-w-3xl mx-auto text-center py-20">
-      <div class="w-32 h-32 mx-auto rounded-2xl flex items-center justify-center">
-          <img src="{% static "img/logo.png" %}" class="w-32 h-32 object-contain">
+  <main class="flex-1 min-w-0 p-4 sm:p-8 overflow-y-auto">
+    <section id="gold-card" class="gold-card" data-url="{% url 'player:api_gold_prices' %}" aria-labelledby="gold-title">
+      <div class="gold-heading">
+        <div>
+          <p class="gold-eyebrow"><span aria-hidden="true">Au</span> ДРАГОЦЕННЫЕ МЕТАЛЛЫ</p>
+          <h1 id="gold-title">Стоимость золота</h1>
+          <p class="gold-subtitle">Учётная цена Банка России · рубли за грамм</p>
+        </div>
+        <div class="gold-periods" role="group" aria-label="Период графика">
+          <button type="button" data-days="30" aria-pressed="false">1М</button>
+          <button type="button" data-days="90" aria-pressed="true">3М</button>
+          <button type="button" data-days="365" aria-pressed="false">1Г</button>
+        </div>
       </div>
-      <h2 class="text-3xl font-semibold text-graphite-900 mb-3">Добро пожаловать, {{ user.full_name }}!</h2>
-      <p class="text-gray-500 max-w-md mx-auto">Выберите раздел в левой панели, чтобы начать обучение.</p>
-    </div>
+      <p id="gold-status" class="gold-status" role="status">Загружаем данные Банка России…</p>
+      <button id="gold-retry" type="button" class="hidden gold-retry">Попробовать снова</button>
+      <div id="gold-content" hidden>
+        <div class="gold-quote"><span id="gold-price"></span><span class="gold-unit">₽ / г</span></div>
+        <div class="gold-meta"><span id="gold-change"></span><span id="gold-date"></span></div>
+        <div class="gold-chart-wrap">
+          <svg id="gold-chart" viewBox="0 0 900 330" role="img" aria-labelledby="gold-chart-title gold-chart-description"></svg>
+          <div id="gold-tooltip" class="gold-tooltip" hidden></div>
+        </div>
+        <div class="gold-stats">
+          <div><span>Минимум за период</span><strong id="gold-min"></strong></div>
+          <div><span>Максимум за период</span><strong id="gold-max"></strong></div>
+          <div><span>Изменение за период</span><strong id="gold-delta"></strong></div>
+        </div>
+      </div>
+      <footer class="gold-footer"><a href="https://www.cbr.ru/hd_base/metall/" target="_blank" rel="noopener noreferrer">Источник: Банк России ↗</a><span>Обновление каждый рабочий день</span></footer>
+    </section>
+    <p class="max-w-5xl mx-auto mt-6 text-sm text-gray-500">Выберите раздел обучения в меню, чтобы перейти к лекциям.</p>
   </main>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script src="{% static 'js/gold.js' %}?v=1"></script>
 {% endblock %}
