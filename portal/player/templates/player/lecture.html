@@ -47,7 +47,7 @@
     {% with test=lecture.test_embed %}
       {% if test %}
         <section class="mt-8" aria-labelledby="lecture-test-title">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 id="lecture-test-title" class="text-xl font-semibold text-graphite-900">Тест для оценки знаний</h2>
             {% if not offline_mode %}<a href="{{ lecture.test_url }}" target="_blank" rel="noopener noreferrer" class="text-sm text-amber-700 hover:underline">Открыть тест в новой вкладке</a>{% endif %}
           </div>
