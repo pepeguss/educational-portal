@@ -76,12 +76,14 @@ class LectureFile(models.Model):
     TYPE_CHOICES = (
         ('pdf',  'PDF'),
         ('docx', 'DOCX'),
+        ('pptx', 'PPTX'),
         ('mp4',  'MP4'),
         ('mp3',  'MP3'),
     )
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name='files', verbose_name='Лекция')
     name = models.CharField('Имя файла', max_length=255)
     file = models.FileField('Файл', upload_to='lectures/%Y/%m/')
+    preview = models.FileField('Предпросмотр презентации', upload_to='previews/%Y/%m/', blank=True)
     type = models.CharField('Тип', max_length=5, choices=TYPE_CHOICES)
 
     class Meta:

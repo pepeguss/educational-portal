@@ -7,22 +7,7 @@
   <title>{% block title %}Прииск Удерейский{% endblock %}</title>
 
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            graphite: { 50:'#f6f7f8', 100:'#e6e8eb', 500:'#3a3f47', 700:'#2a2e35', 900:'#1a1d23' },
-            amber:    { 500:'#f5b301', 600:'#d99c00' },
-          },
-          fontFamily: { sans: ['Inter','system-ui','sans-serif'] }
-        }
-      }
-    }
-  </script>
+  <link rel="stylesheet" href="{% static 'vendor/tailwind.css' %}">
 
   <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=6">
   <link rel="icon" type="image/x-icon" href="{% static 'img/favicon.ico' %}">

@@ -29,7 +29,7 @@
         {% csrf_token %}
         <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
         {% for portal_user in portal_users %}
-          <div class="border-t border-gray-100 pt-3">
+          <div data-user-row class="border-t border-gray-100 pt-3">
             <div class="admin-user flex flex-wrap items-center gap-3">
               <label for="user-department-{{ portal_user.id }}" class="flex-1 min-w-0">
                 <span class="block font-medium break-words">{{ portal_user.full_name|default:portal_user.username }}</span>
@@ -45,6 +45,7 @@
                 <option value="user" {% if portal_user.role == 'user' %}selected{% endif %}>Пользователь</option>
                 <option value="admin" {% if portal_user.role == 'admin' %}selected{% endif %}>Администратор</option>
               </select>
+              <button type="button" data-delete-user="{{ portal_user.id }}" data-user-name="{{ portal_user.username }}" {% if portal_user.id == user.id %}disabled data-own-account title="Нельзя удалить свой аккаунт"{% endif %} class="px-3 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">Удалить аккаунт</button>
             </div>
           </div>
         {% empty %}
@@ -116,5 +117,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{% static 'js/admin.js' %}?v=6"></script>
+  <script src="{% static 'js/admin.js' %}?v=7"></script>
 {% endblock %}

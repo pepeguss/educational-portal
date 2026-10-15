@@ -9,3 +9,10 @@ __pycache__
 venv
 .idea
 .vscode
+db.sqlite3*
+media
+staticfiles
+static/vendor
+assets/node_modules
+*.tar
+*.tar.gz

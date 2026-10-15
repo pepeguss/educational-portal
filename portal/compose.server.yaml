@@ -1,0 +1,26 @@
+# Standalone server configuration: docker compose -f compose.server.yaml ...
+name: training-portal
+services:
+  app:
+    image: training-portal:beta
+    build: .
+    ports:
+      - "${PORTAL_PORT:-8000}:8000"
+    environment:
+      DJANGO_DEBUG: "false"
+      DJANGO_SECRET_KEY: "${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}"
+      DJANGO_ALLOWED_HOSTS: "${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1}"
+      DJANGO_CSRF_TRUSTED_ORIGINS: "${DJANGO_CSRF_TRUSTED_ORIGINS:-}"
+      DJANGO_OFFLINE_MODE: "true"
+      DJANGO_DB_PATH: /data/db.sqlite3
+      DJANGO_MEDIA_ROOT: /media
+    volumes:
+      - portal_db:/data
+      - portal_media:/media
+    restart: unless-stopped
+
+volumes:
+  portal_db:
+    name: training_portal_db
+  portal_media:
+    name: training_portal_media

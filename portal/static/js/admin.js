@@ -151,8 +151,42 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedRoles = new Map(Array.from(roleSelects, ([id, select]) => [id, select.value]));
   let departmentsSaving = false;
   const changedDepartments = () => departmentSelects.filter(select =>
-    select.value !== savedDepartments.get(select) || roleSelects.get(select.dataset.userId).value !== savedRoles.get(select.dataset.userId)
+    select.isConnected && (select.value !== savedDepartments.get(select) || roleSelects.get(select.dataset.userId).value !== savedRoles.get(select.dataset.userId))
   );
+
+  const deleteButtons = departmentsForm.querySelectorAll('[data-delete-user]');
+  const syncDeleteButtons = () => deleteButtons.forEach(button => {
+    button.disabled = departmentsSaving || button.hasAttribute('data-own-account');
+  });
+  departmentsForm.addEventListener('click', async event => {
+    const button = event.target.closest('[data-delete-user]');
+    if (!button || button.disabled || departmentsSaving) return;
+    if (!confirm(`Удалить аккаунт «${button.dataset.userName}»? Это действие нельзя отменить.`)) return;
+    departmentsSaving = true;
+    syncDeleteButtons();
+    departmentSave.disabled = true;
+    departmentSelects.forEach(select => { select.disabled = true; });
+    roleSelects.forEach(select => { select.disabled = true; });
+    showError(departmentError);
+    try {
+      await post(`/api/user/${button.dataset.deleteUser}/delete/`, {});
+      button.closest('[data-user-row]').remove();
+      document.querySelectorAll('[data-department-count]').forEach(counter => {
+        const count = departmentSelects.filter(select => select.isConnected && savedDepartments.get(select) === counter.dataset.departmentCount).length;
+        counter.textContent = `${count} польз.`;
+      });
+      departmentStatus.textContent = changedDepartments().length
+        ? `Несохранённых изменений: ${changedDepartments().length}` : 'Аккаунт удалён';
+    } catch (error) {
+      showError(departmentError, error.message);
+    } finally {
+      departmentsSaving = false;
+      syncDeleteButtons();
+      departmentSelects.forEach(select => { select.disabled = false; });
+      roleSelects.forEach(select => { select.disabled = select.hasAttribute('data-own-role'); });
+      departmentSave.disabled = changedDepartments().length === 0;
+    }
+  });
 
   departmentsForm.addEventListener('change', () => {
     const count = changedDepartments().length;
@@ -179,6 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ? { role: roleSelects.get(select.dataset.userId).value } : {}),
     }));
     departmentsSaving = true;
+    syncDeleteButtons();
     departmentSave.disabled = true;
     departmentSelects.forEach(select => { select.disabled = true; });
     roleSelects.forEach(select => { select.disabled = true; });
@@ -192,13 +227,14 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       departmentStatus.textContent = `Изменения сохранены: ${changed.length}`;
       document.querySelectorAll('[data-department-count]').forEach(counter => {
-        const count = departmentSelects.filter(select => select.value === counter.dataset.departmentCount).length;
+        const count = departmentSelects.filter(select => select.isConnected && select.value === counter.dataset.departmentCount).length;
         counter.textContent = `${count} польз.`;
       });
     } catch (error) {
       showError(departmentError, error.message);
     } finally {
       departmentsSaving = false;
+      syncDeleteButtons();
       departmentSelects.forEach(select => { select.disabled = false; });
       roleSelects.forEach(select => { select.disabled = select.hasAttribute('data-own-role'); });
       departmentSave.textContent = 'Сохранить изменения';

@@ -1,4 +1,5 @@
 import json
+from django.conf import settings
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
@@ -6,6 +7,8 @@ from django.http import JsonResponse, FileResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from .presentations import presentation_pdf
 from .validators import validate_yandex_form_url
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, Count
@@ -22,8 +25,11 @@ def serve_file(request, file_id):
     )
     
     
-    response = FileResponse(obj.file.open('rb'), content_type='application/pdf' if obj.type == 'pdf' else None)
-    response['Content-Disposition'] = f'inline; filename="{obj.name}"'
+    if obj.type == 'pptx':
+        if not obj.preview:
+            return JsonResponse({'error': 'Предпросмотр отсутствует. Загрузите презентацию заново.'}, status=404)
+        return FileResponse(obj.preview.open('rb'), content_type='application/pdf', filename='slides.pdf')
+    response = FileResponse(obj.file.open('rb'), content_type='application/pdf' if obj.type == 'pdf' else None, filename=obj.name)
     return response
 
 
@@ -62,7 +68,7 @@ def lecture_view(request, lecture_id):
     lecture = get_object_or_404(
         Lecture.objects.visible_to(request.user).prefetch_related('files'), id=lecture_id,
     )
-    return render(request, 'player/lecture.html', {'lecture': lecture})
+    return render(request, 'player/lecture.html', {'lecture': lecture, 'offline_mode': settings.OFFLINE_MODE})
 
 @login_required
 def admin_view(request):
@@ -76,6 +82,18 @@ def admin_view(request):
     })
 
 # --- API для админки (AJAX) ---
+@login_required
+@require_POST
+def api_user_delete(request, user_id):
+    if request.user.role != 'admin':
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    if user_id == request.user.pk:
+        return JsonResponse({'error': 'Нельзя удалить свой аккаунт администратора.'}, status=400)
+    user = get_object_or_404(User, pk=user_id)
+    user.delete()
+    return JsonResponse({'ok': True})
+
+
 @login_required
 @require_POST
 def api_department_create(request):
@@ -285,9 +303,18 @@ def api_file_upload(request, lecture_id):
     if not f:
         return JsonResponse({'error': 'Нет файла'}, status=400)
     ext = f.name.rsplit('.', 1)[-1].lower()
-    if ext not in ('pdf', 'docx', 'mp4', 'mp3'):
+    if ext not in ('pdf', 'docx', 'pptx', 'mp4', 'mp3'):
         return JsonResponse({'error': 'Недопустимый формат'}, status=400)
-    obj = LectureFile.objects.create(lecture=lec, name=f.name, file=f, type=ext)
+    preview = None
+    if ext == 'pptx':
+        try:
+            preview = presentation_pdf(f)
+        except ValidationError as error:
+            return JsonResponse({'error': error.messages[0]}, status=400)
+    obj = LectureFile(lecture=lec, name=f.name, file=f, type=ext)
+    if preview is not None:
+        obj.preview.save('slides.pdf', ContentFile(preview), save=False)
+    obj.save()
     return JsonResponse({'id': obj.id, 'name': obj.name, 'type': obj.type,
                          'url': reverse('player:serve_file', args=[obj.pk])})
 

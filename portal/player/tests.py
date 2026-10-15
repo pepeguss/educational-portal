@@ -1,4 +1,9 @@
 import json
+import io
+import subprocess
+from pathlib import Path
+from unittest.mock import patch
+from zipfile import ZipFile
 from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
@@ -8,6 +13,119 @@ from django.urls import reverse
 
 from users.models import Department
 from .models import Lecture, LectureFile, Section
+from .presentations import presentation_pdf
+
+
+class AccountDeletionTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_user(username='admin', role='admin')
+        self.member = get_user_model().objects.create_user(username='member')
+        self.url = reverse('player:api_user_delete', args=[self.member.pk])
+
+    def test_only_admin_can_delete_and_only_with_post(self):
+        self.assertEqual(self.client.post(self.url).status_code, 302)
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.post(self.url).status_code, 403)
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+        self.assertTrue(get_user_model().objects.filter(pk=self.member.pk).exists())
+        self.assertEqual(self.client.post(self.url).status_code, 200)
+        self.assertFalse(get_user_model().objects.filter(pk=self.member.pk).exists())
+        self.assertEqual(self.client.post(self.url).status_code, 404)
+
+    def test_self_deletion_is_blocked_and_deleted_session_loses_access(self):
+        from django.test import Client
+        member_client = Client()
+        member_client.force_login(self.member)
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.post(reverse('player:api_user_delete', args=[self.admin.pk])).status_code, 400)
+        self.client.post(self.url)
+        self.assertEqual(member_client.get(reverse('player:index')).status_code, 302)
+
+
+class PresentationTests(TestCase):
+    def setUp(self):
+        self.admin = get_user_model().objects.create_user(username='admin', role='admin')
+        self.member = get_user_model().objects.create_user(username='member')
+        self.section = Section.objects.create(title='Раздел')
+        self.lecture = Lecture.objects.create(section=self.section, title='Слайды')
+        self.url = reverse('player:api_file_upload', args=[self.lecture.pk])
+        self.client.force_login(self.admin)
+        self.media = TemporaryDirectory()
+        self.addCleanup(self.media.cleanup)
+        self.settings_override = override_settings(MEDIA_ROOT=self.media.name)
+        self.settings_override.enable()
+        self.addCleanup(self.settings_override.disable)
+
+    def upload(self):
+        data = io.BytesIO()
+        with ZipFile(data, 'w') as archive:
+            archive.writestr('[Content_Types].xml', '<Types/>')
+            archive.writestr('ppt/presentation.xml', '<presentation/>')
+        return SimpleUploadedFile('Презентация.PPTX', data.getvalue())
+
+    @override_settings(LIBREOFFICE_BINARY='soffice-test')
+    @patch('player.presentations.subprocess.run')
+    def test_upload_conversion_private_preview_and_mobile_markup(self, run):
+        def convert(command, **kwargs):
+            source = Path(command[-1])
+            self.assertTrue(source.read_bytes().startswith(b'PK'))
+            source.with_suffix('.pdf').write_bytes(b'%PDF-1.4 slides')
+            self.assertEqual(kwargs['timeout'], 120)
+        run.side_effect = convert
+        response = self.client.post(self.url, {'file': self.upload()})
+        self.assertEqual(response.status_code, 200)
+        obj = LectureFile.objects.get(pk=response.json()['id'])
+        self.assertEqual(obj.type, 'pptx')
+        self.assertTrue(obj.preview)
+        self.assertTrue(obj.file.read().startswith(b'PK'))
+        obj.file.close()
+        page = self.client.get(reverse('player:lecture', args=[self.lecture.pk]))
+        self.assertContains(page, 'data-file-type="pptx"')
+        self.assertContains(page, 'name="viewport"')
+        self.client.force_login(self.member)
+        preview = self.client.get(response.json()['url'])
+        self.assertEqual(preview['Content-Type'], 'application/pdf')
+        self.assertEqual(b''.join(preview.streaming_content), b'%PDF-1.4 slides')
+        preview.close()
+        self.lecture.is_public = False
+        self.lecture.save()
+        self.assertEqual(self.client.get(response.json()['url']).status_code, 404)
+        self.assertEqual(self.client.get(obj.preview.url).status_code, 404)
+        self.assertEqual(self.client.post(self.url, {'file': self.upload()}).status_code, 403)
+
+    @override_settings(LIBREOFFICE_BINARY='soffice-test')
+    @patch('player.presentations.subprocess.run')
+    def test_bad_file_timeout_and_missing_output_leave_no_record(self, run):
+        response = self.client.post(self.url, {'file': SimpleUploadedFile('bad.pptx', b'not a zip')})
+        self.assertEqual(response.status_code, 400)
+        run.assert_not_called()
+        for error in [subprocess.TimeoutExpired('soffice', 120), OSError('missing binary'), None]:
+            run.side_effect = error
+            self.assertEqual(self.client.post(self.url, {'file': self.upload()}).status_code, 400)
+        self.assertFalse(LectureFile.objects.exists())
+        self.assertFalse(list(Path(self.media.name).rglob('*')))
+
+    def test_missing_converter_and_upload_size(self):
+        from django.core.exceptions import ValidationError
+        with patch('player.presentations.shutil.which', return_value=None):
+            self.assertEqual(self.client.post(self.url, {'file': self.upload()}).status_code, 400)
+        upload = self.upload()
+        upload.size = 101 * 1024 * 1024
+        with self.assertRaises(ValidationError):
+            presentation_pdf(upload)
+
+    @override_settings(OFFLINE_MODE=True)
+    def test_offline_page_uses_local_assets_and_does_not_embed_remote_test(self):
+        self.lecture.test_url = 'https://forms.yandex.ru/u/example'
+        self.lecture.save()
+        page = self.client.get(reverse('player:lecture', args=[self.lecture.pk]))
+        self.assertContains(page, '/static/vendor/tailwind.css')
+        self.assertContains(page, '/static/vendor/jszip.min.js')
+        self.assertContains(page, '/static/vendor/docx-preview.min.js')
+        self.assertContains(page, 'требует доступа в интернет')
+        self.assertNotContains(page, '<iframe')
+        self.assertNotContains(page, 'src="https://')
 
 
 class LectureTestLinkTests(TestCase):

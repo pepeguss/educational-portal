@@ -10,7 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,21 +22,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)7pim9r(md@m83ids!42z4gmw^%df9_a&2o1^2%s2_%mnfb4aq'
+DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() in ('1', 'true', 'yes')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured('Set DJANGO_SECRET_KEY before starting the server.')
+    SECRET_KEY = 'django-insecure-local-development-only'
+if not DEBUG and SECRET_KEY == 'replace-with-a-long-random-key':
+    raise ImproperlyConfigured('Replace the example DJANGO_SECRET_KEY with a random key.')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+def env_list(name, default=''):
+    return [value.strip() for value in os.environ.get(name, default).split(',') if value.strip()]
 
-ALLOWED_HOSTS = [
-    "pepegus.fun",
-    "localhost",
-    "127.0.0.1",
-    "192.168.31.115"
-]
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://pepegus.fun",
-]
+ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
+CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS')
+OFFLINE_MODE = os.environ.get('DJANGO_OFFLINE_MODE', 'false').lower() in ('1', 'true', 'yes')
 
 
 # Application definition
@@ -53,6 +57,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -87,7 +92,8 @@ WSGI_APPLICATION = 'portal.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': Path(os.environ.get('DJANGO_DB_PATH', str(BASE_DIR / 'db.sqlite3'))),
+        'OPTIONS': {'timeout': 20},
     }
 }
 
@@ -129,6 +135,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 AUTH_USER_MODEL = 'users.User'
 
@@ -137,7 +144,7 @@ LOGIN_REDIRECT_URL = 'player:index'
 LOGOUT_REDIRECT_URL = 'users:login'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT', str(BASE_DIR / 'media')))
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 

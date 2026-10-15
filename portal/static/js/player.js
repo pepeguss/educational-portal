@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let revision = 0;
   let cleanup = () => {};
   let pdfLibrary;
+  const pdfBase = new URL(viewer.dataset.pdfjsBase, location.href).href;
 
   function showError(error) {
     const message = document.createElement('div');
@@ -14,20 +15,20 @@ document.addEventListener('DOMContentLoaded', () => {
     viewer.replaceChildren(message);
   }
 
-  async function renderPdf(fileUrl, current) {
-    pdfLibrary ||= import('https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.min.mjs');
+  async function renderPdf(fileUrl, current, presentation = false) {
+    pdfLibrary ||= import(`${pdfBase}build/pdf.min.mjs`);
     const pdfjs = await pdfLibrary.catch(error => { pdfLibrary = null; throw error; });
     if (current !== revision) return;
-    pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/build/pdf.worker.min.mjs';
+    pdfjs.GlobalWorkerOptions.workerSrc = `${pdfBase}build/pdf.worker.min.mjs`;
     const task = pdfjs.getDocument({
       url: fileUrl,
       isEvalSupported: false,
       stopAtErrors: true,
       // JPEG 2000 scans require the OpenJPEG decoder shipped with this PDF.js version.
-      wasmUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/wasm/',
-      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/cmaps/',
+      wasmUrl: `${pdfBase}wasm/`,
+      cMapUrl: `${pdfBase}cmaps/`,
       cMapPacked: true,
-      standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.149/standard_fonts/',
+      standardFontDataUrl: `${pdfBase}standard_fonts/`,
     });
     let observer;
     cleanup = () => {
@@ -60,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
           const canvas = document.createElement('canvas');
           canvas.width = Math.ceil(display.width * pixelRatio);
           canvas.height = Math.ceil(display.height * pixelRatio);
-          canvas.setAttribute('aria-label', `Страница ${entry.target.dataset.page}`);
+          canvas.setAttribute('aria-label', `${presentation ? 'Слайд' : 'Страница'} ${entry.target.dataset.page}`);
           entry.target.style.width = `${display.width}px`;
           entry.target.style.aspectRatio = `${display.width} / ${display.height}`;
           entry.target.replaceChildren(canvas);
@@ -80,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
       page.dataset.page = number;
       page.style.width = `${width}px`;
       page.style.maxWidth = '100%';
-      page.style.aspectRatio = '210 / 297';
+      page.style.aspectRatio = presentation ? '16 / 9' : '210 / 297';
       scroll.append(page);
       observer.observe(page);
     }
@@ -100,13 +101,13 @@ document.addEventListener('DOMContentLoaded', () => {
     cleanup();
     cleanup = () => {};
     const { fileType, fileUrl, fileName } = data;
-    viewer.classList.toggle('document-viewer', ['pdf', 'docx'].includes(fileType));
+    viewer.classList.toggle('document-viewer', ['pdf', 'docx', 'pptx'].includes(fileType));
     viewer.classList.toggle('media-viewer', ['mp4', 'mp3'].includes(fileType));
     viewer.innerHTML = '<div class="viewer-placeholder flex items-center justify-center h-[420px] text-gray-400">Загрузка…</div>';
 
-    if (fileType === 'pdf') {
+    if (fileType === 'pdf' || fileType === 'pptx') {
       try {
-        await renderPdf(fileUrl, current);
+        await renderPdf(fileUrl, current, fileType === 'pptx');
       } catch (error) {
         if (current === revision) { cleanup(); showError(error); }
       }
