@@ -8,12 +8,83 @@ from tempfile import TemporaryDirectory
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import transaction
 from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from users.models import Department
 from .models import Lecture, LectureFile, Section
 from .presentations import presentation_pdf
+
+
+class LectureFileCleanupTests(TestCase):
+    def setUp(self):
+        self.media = TemporaryDirectory()
+        self.addCleanup(self.media.cleanup)
+        settings_override = override_settings(MEDIA_ROOT=self.media.name)
+        settings_override.enable()
+        self.addCleanup(settings_override.disable)
+        self.admin = get_user_model().objects.create_user(username='admin', role='admin')
+        self.client.force_login(self.admin)
+        self.section = Section.objects.create(title='Cleanup')
+        self.lecture = Lecture.objects.create(section=self.section, title='Cleanup')
+        self.obj = LectureFile.objects.create(
+            lecture=self.lecture, name='slides.pptx', type='pptx',
+            file=SimpleUploadedFile('slides.pptx', b'presentation'),
+            preview=SimpleUploadedFile('slides.pdf', b'%PDF-preview'),
+        )
+        self.storage = self.obj.file.storage
+        self.names = [self.obj.file.name, self.obj.preview.name]
+
+    def assert_endpoint_cleans_up(self, endpoint, pk):
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            response = self.client.post(reverse(f'player:{endpoint}', args=[pk]))
+            self.assertEqual(response.status_code, 200)
+            self.assertFalse(LectureFile.objects.filter(pk=self.obj.pk).exists())
+            self.assertTrue(all(self.storage.exists(name) for name in self.names))
+        self.assertEqual(len(callbacks), 2)
+        self.assertTrue(all(not self.storage.exists(name) for name in self.names))
+
+    def test_file_endpoint_cleans_up_after_commit(self):
+        self.assert_endpoint_cleans_up('api_file_delete', self.obj.pk)
+
+    def test_lecture_deletion_cleans_up_its_files(self):
+        self.assert_endpoint_cleans_up('api_lecture_delete', self.lecture.pk)
+
+    def test_section_deletion_cleans_up_its_files(self):
+        self.assert_endpoint_cleans_up('api_section_delete', self.section.pk)
+
+    def test_rollback_keeps_original_and_preview(self):
+        pk = self.obj.pk
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            with self.assertRaises(RuntimeError):
+                with transaction.atomic():
+                    LectureFile.objects.filter(pk=pk).delete()
+                    raise RuntimeError('Rollback')
+        self.assertEqual(callbacks, [])
+        self.assertTrue(LectureFile.objects.filter(pk=pk).exists())
+        self.assertTrue(all(self.storage.exists(name) for name in self.names))
+
+    def test_shared_content_is_kept_until_last_reference_is_deleted(self):
+        other = LectureFile.objects.create(
+            lecture=self.lecture, name='shared.pptx', type='pptx',
+            file=self.names[0], preview=self.names[1],
+        )
+        with self.captureOnCommitCallbacks(execute=True):
+            self.obj.delete()
+        self.assertTrue(all(self.storage.exists(name) for name in self.names))
+        with self.captureOnCommitCallbacks(execute=True):
+            other.delete()
+        self.assertTrue(all(not self.storage.exists(name) for name in self.names))
+
+    def test_user_cannot_delete_records_or_content(self):
+        user = get_user_model().objects.create_user(username='member')
+        self.client.force_login(user)
+        with self.captureOnCommitCallbacks(execute=True) as callbacks:
+            response = self.client.post(reverse('player:api_file_delete', args=[self.obj.pk]))
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(callbacks, [])
+        self.assertTrue(all(self.storage.exists(name) for name in self.names))
 
 
 class MediaSeekingTests(TestCase):
