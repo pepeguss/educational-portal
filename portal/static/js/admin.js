@@ -21,6 +21,65 @@ document.addEventListener('DOMContentLoaded', () => {
   let saving = false;
   let filesBusy = false;
   let lectureCard = null;
+  const deleteDialog = document.getElementById('delete-dialog');
+  const deleteForm = document.getElementById('delete-form');
+  const deleteConfirm = document.getElementById('delete-confirm');
+  const deleteError = document.getElementById('delete-error');
+  let deletion = null;
+  let deleting = false;
+
+  function confirmDeletion(title, description, label, action) {
+    if (deletion) return Promise.resolve(false);
+    document.getElementById('delete-title').textContent = title;
+    document.getElementById('delete-description').textContent = description;
+    deleteConfirm.textContent = label;
+    showError(deleteError);
+    deleteDialog.returnValue = '';
+    return new Promise(resolve => {
+      deletion = { action, resolve, label };
+      deleteDialog.showModal();
+      document.getElementById('delete-cancel').focus();
+    });
+  }
+
+  deleteForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (deleting || !deletion) return;
+    deleting = true;
+    deleteForm.querySelectorAll('button').forEach(button => { button.disabled = true; });
+    deleteConfirm.textContent = 'Удаление…';
+    showError(deleteError);
+    try {
+      await deletion.action();
+      deleteDialog.close('deleted');
+    } catch (error) {
+      showError(deleteError, error.message);
+    } finally {
+      deleting = false;
+      deleteForm.querySelectorAll('button').forEach(button => { button.disabled = false; });
+      if (deletion) deleteConfirm.textContent = deletion.label;
+    }
+  });
+  ['delete-cancel', 'delete-close'].forEach(id => {
+    document.getElementById(id).addEventListener('click', () => {
+      if (!deleting) deleteDialog.close('cancel');
+    });
+  });
+  deleteDialog.addEventListener('cancel', event => {
+    if (deleting) event.preventDefault();
+  });
+  deleteDialog.addEventListener('click', event => {
+    const rect = deleteDialog.getBoundingClientRect();
+    if (!deleting && event.target === deleteDialog &&
+        (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom)) {
+      deleteDialog.close('cancel');
+    }
+  });
+  deleteDialog.addEventListener('close', () => {
+    const pending = deletion;
+    deletion = null;
+    pending?.resolve(deleteDialog.returnValue === 'deleted');
+  });
 
   async function post(url, data) {
     const body = new FormData();
@@ -189,7 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
   departmentsForm.addEventListener('click', async event => {
     const button = event.target.closest('[data-delete-user]');
     if (!button || button.disabled || departmentsSaving) return;
-    if (!confirm(`Удалить аккаунт «${button.dataset.userName}»? Это действие нельзя отменить.`)) return;
     departmentsSaving = true;
     syncDeleteButtons();
     departmentSave.disabled = true;
@@ -197,7 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
     roleSelects.forEach(select => { select.disabled = true; });
     showError(departmentError);
     try {
-      await post(`/api/user/${button.dataset.deleteUser}/delete/`, {});
+      const deleted = await confirmDeletion(
+        'Удалить аккаунт?', `Аккаунт «${button.dataset.userName}» будет удалён. Пользователь потеряет доступ к порталу.`,
+        'Удалить аккаунт', () => post(`/api/user/${button.dataset.deleteUser}/delete/`, {}),
+      );
+      if (!deleted) return;
       button.closest('[data-user-row]').remove();
       filterUsers();
       document.querySelectorAll('[data-department-count]').forEach(counter => {
@@ -354,16 +416,19 @@ document.addEventListener('DOMContentLoaded', () => {
           departmentSave.scrollIntoView({ block: 'center' });
           return;
         }
-        if (!confirm(`Удалить отдел «${button.dataset.departmentName}»? Его сотрудники останутся в системе без отдела. Лекции сохранятся; доступ удаляемого отдела к ним будет снят.`)) return;
         departmentsSaving = true;
         syncDeleteButtons();
         departmentSelects.forEach(select => { select.disabled = true; });
         roleSelects.forEach(select => { select.disabled = true; });
         try {
-          await post(`/api/department/${button.dataset.departmentId}/delete/`, {});
+          const deleted = await confirmDeletion(
+            'Удалить отдел?', `Отдел «${button.dataset.departmentName}» будет удалён. Его сотрудники останутся в системе без отдела. Лекции сохранятся; доступ этого отдела к ним будет снят.`,
+            'Удалить отдел', () => post(`/api/department/${button.dataset.departmentId}/delete/`, {}),
+          );
+          if (!deleted) return;
           location.reload();
         } catch (error) {
-          alert(error.message);
+          showError(departmentError, error.message);
         } finally {
           departmentsSaving = false;
           syncDeleteButtons();
@@ -401,13 +466,17 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'del-section':
       case 'del-lecture': {
         const deletingSection = button.dataset.act === 'del-section';
-        if (!confirm(deletingSection ? 'Удалить раздел со всеми лекциями?' : 'Удалить лекцию?')) return;
         button.disabled = true;
         try {
-          await post(deletingSection ? `/api/section/${sid}/delete/` : `/api/lecture/${lid}/delete/`, {});
+          const deleted = await confirmDeletion(
+            deletingSection ? 'Удалить раздел?' : 'Удалить лекцию?',
+            deletingSection ? `Раздел «${section.querySelector('.section-title').textContent.trim()}», все его лекции и файлы будут удалены.`
+              : `Лекция «${lecture.querySelector('.lecture-title').textContent.trim()}» и все её файлы будут удалены.`,
+            deletingSection ? 'Удалить раздел' : 'Удалить лекцию',
+            () => post(deletingSection ? `/api/section/${sid}/delete/` : `/api/lecture/${lid}/delete/`, {}),
+          );
+          if (!deleted) return;
           location.reload();
-        } catch (error) {
-          alert(error.message);
         } finally {
           button.disabled = false;
         }

@@ -63,6 +63,27 @@
   </div>
 </dialog>
 
+<dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description" class="m-auto bg-white rounded-2xl shadow-xl w-full max-w-md overflow-y-auto p-6 backdrop:bg-black/50">
+  <form id="delete-form">
+    <div class="flex items-start justify-between gap-3 mb-4">
+      <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg>
+      </div>
+      <button id="delete-close" type="button" aria-label="Закрыть окно" class="w-10 h-10 rounded-lg text-gray-500 hover:bg-gray-100 disabled:opacity-50">
+        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mx-auto"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <h3 id="delete-title" class="text-xl font-semibold text-graphite-900 mb-2"></h3>
+    <p id="delete-description" class="text-sm text-gray-500 leading-relaxed"></p>
+    <p class="text-sm text-red-600 mt-3">Это действие нельзя отменить.</p>
+    <p id="delete-error" role="alert" class="hidden mt-3 text-sm text-red-600"></p>
+    <div class="flex flex-wrap justify-end gap-2 mt-6">
+      <button id="delete-cancel" type="button" autofocus class="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-50">Отмена</button>
+      <button id="delete-confirm" type="submit" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"></button>
+    </div>
+  </form>
+</dialog>
+
 <template id="file-row-template">
   {% include "player/_admin_file_row.html" with file=None %}
 </template>
