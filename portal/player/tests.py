@@ -16,6 +16,107 @@ from .models import Lecture, LectureFile, Section
 from .presentations import presentation_pdf
 
 
+class MediaSeekingTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(username='listener')
+        self.client.force_login(self.user)
+        self.lecture = Lecture.objects.create(section=Section.objects.create(title='Media'), title='Media')
+        self.content = bytes(range(256)) * 1024
+        self.media = TemporaryDirectory()
+        self.addCleanup(self.media.cleanup)
+        settings_override = override_settings(MEDIA_ROOT=self.media.name)
+        settings_override.enable()
+        self.addCleanup(settings_override.disable)
+        self.files = [LectureFile.objects.create(
+            lecture=self.lecture, name=f'Материал.{kind}', type=kind,
+            file=SimpleUploadedFile(f'material.{kind}', self.content),
+        ) for kind in ('mp3', 'mp4')]
+
+    def test_full_file_and_head_advertise_seeking(self):
+        for obj in self.files:
+            url = reverse('player:serve_file', args=[obj.pk])
+            for method in ('get', 'head'):
+                with self.subTest(kind=obj.type, method=method):
+                    response = getattr(self.client, method)(url)
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(response['Accept-Ranges'], 'bytes')
+                    self.assertEqual(int(response['Content-Length']), len(self.content))
+                    self.assertEqual(response['Content-Type'], 'audio/mpeg' if obj.type == 'mp3' else 'video/mp4')
+                    if method == 'get':
+                        self.assertEqual(b''.join(response.streaming_content), self.content)
+                    else:
+                        self.assertEqual(response.content, b'')
+                    response.close()
+
+    def test_seek_forward_backward_open_ended_and_suffix_ranges(self):
+        for obj in self.files:
+            for url in (reverse('player:serve_file', args=[obj.pk]), obj.file.url):
+                for value, start, end in [
+                    ('bytes=180000-190000', 180000, 190000),
+                    ('bytes=0-1', 0, 1),
+                    ('bytes=1024-', 1024, len(self.content) - 1),
+                    ('bytes=-128', len(self.content) - 128, len(self.content) - 1),
+                    ('bytes=262140-999999999', 262140, len(self.content) - 1),
+                    ('bytes=-999999999', 0, len(self.content) - 1),
+                ]:
+                    with self.subTest(kind=obj.type, url=url, value=value):
+                        response = self.client.get(url, HTTP_RANGE=value)
+                        self.assertEqual(response.status_code, 206)
+                        self.assertEqual(response['Content-Range'], f'bytes {start}-{end}/{len(self.content)}')
+                        self.assertEqual(int(response['Content-Length']), end - start + 1)
+                        self.assertEqual(b''.join(response.streaming_content), self.content[start:end + 1])
+                        response.close()
+
+    def test_unsatisfiable_ranges(self):
+        url = reverse('player:serve_file', args=[self.files[0].pk])
+        for value in ['bytes=262144-', 'bytes=9-2', 'bytes=-0', 'bytes=' + '9' * 5000 + '-']:
+            with self.subTest(value=value[:40]):
+                response = self.client.get(url, HTTP_RANGE=value)
+                self.assertEqual(response.status_code, 416)
+                self.assertEqual(response['Content-Range'], f'bytes */{len(self.content)}')
+                self.assertEqual(response.content, b'')
+
+    def test_unsupported_or_conditional_ranges_fall_back_to_full_response(self):
+        url = reverse('player:serve_file', args=[self.files[0].pk])
+        for headers in [
+            {'HTTP_RANGE': 'invalid'}, {'HTTP_RANGE': 'bytes=-'},
+            {'HTTP_RANGE': 'bytes=0-1,8-9'}, {'HTTP_RANGE': 'items=0-1'},
+            {'HTTP_RANGE': 'bytes=0-1', 'HTTP_IF_RANGE': '"old-etag"'},
+        ]:
+            response = self.client.get(url, **headers)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(b''.join(response.streaming_content), self.content)
+            response.close()
+
+    def test_ranges_do_not_bypass_lecture_access(self):
+        self.lecture.is_public = False
+        self.lecture.save()
+        for obj in self.files:
+            for url in (reverse('player:serve_file', args=[obj.pk]), obj.file.url):
+                self.assertEqual(self.client.get(url, HTTP_RANGE='bytes=0-1').status_code, 404)
+                self.assertEqual(self.client.head(url).status_code, 404)
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse('player:serve_file', args=[self.files[0].pk]), HTTP_RANGE='bytes=0-1').status_code, 302)
+
+    def test_empty_media_has_no_satisfiable_range(self):
+        obj = LectureFile.objects.create(
+            lecture=self.lecture, name='empty.mp3', type='mp3',
+            file=SimpleUploadedFile('empty.mp3', b''),
+        )
+        response = self.client.get(reverse('player:serve_file', args=[obj.pk]), HTTP_RANGE='bytes=0-')
+        self.assertEqual(response.status_code, 416)
+        self.assertEqual(response['Content-Range'], 'bytes */0')
+
+    def test_partial_response_closes_file_even_before_iteration(self):
+        obj = self.files[0]
+        url = reverse('player:serve_file', args=[obj.pk])
+        with patch('django.core.files.storage.FileSystemStorage._open', wraps=obj.file.storage._open) as opened:
+            response = self.client.get(url, HTTP_RANGE='bytes=0-1')
+            opened.assert_called_once()
+            response.close()
+        # Windows also refuses TemporaryDirectory cleanup if a handle is leaked.
+
+
 class AccountDeletionTests(TestCase):
     def setUp(self):
         self.admin = get_user_model().objects.create_user(username='admin', role='admin')

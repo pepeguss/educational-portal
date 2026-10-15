@@ -219,3 +219,9 @@ __marimo__/
 
 
 /portal/media/
+/portal/staticfiles/
+/portal/static/vendor/
+/portal/assets/node_modules/
+/.pnpm-store/
+/portal/portal-backup-*.tar.gz
+/portal/training-portal-beta.tar

@@ -9,6 +9,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from .presentations import presentation_pdf
+from .media import media_response
 from .validators import validate_yandex_form_url
 from django.db import IntegrityError, transaction
 from django.db.models import Prefetch, Count
@@ -25,6 +26,8 @@ def serve_file(request, file_id):
     )
     
     
+    if obj.type in ('mp4', 'mp3'):
+        return media_response(request, obj)
     if obj.type == 'pptx':
         if not obj.preview:
             return JsonResponse({'error': 'Предпросмотр отсутствует. Загрузите презентацию заново.'}, status=404)
