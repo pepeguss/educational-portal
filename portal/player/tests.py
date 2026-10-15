@@ -17,6 +17,67 @@ from .models import Lecture, LectureFile, Section
 from .presentations import presentation_pdf
 
 
+class DepartmentDeletionTests(TestCase):
+    def setUp(self):
+        self.department = Department.objects.create(name='Удаляемый отдел')
+        self.other = Department.objects.create(name='Другой отдел')
+        self.admin = get_user_model().objects.create_user(
+            username='admin', role='admin', department=self.department,
+        )
+        self.member = get_user_model().objects.create_user(username='member', department=self.department)
+        self.outsider = get_user_model().objects.create_user(username='outsider', department=self.other)
+        self.client.force_login(self.admin)
+        self.url = reverse('player:api_department_delete', args=[self.department.pk])
+
+    def test_delete_preserves_all_users_roles_and_other_departments(self):
+        self.assertEqual(self.client.post(self.url).status_code, 200)
+        self.assertFalse(Department.objects.filter(pk=self.department.pk).exists())
+        self.assertTrue(Department.objects.filter(pk=self.other.pk).exists())
+        self.assertEqual(get_user_model().objects.count(), 3)
+        for user in (self.admin, self.member):
+            user.refresh_from_db()
+            self.assertIsNone(user.department_id)
+        self.assertEqual(self.admin.role, 'admin')
+        self.assertEqual(self.member.role, 'user')
+        self.outsider.refresh_from_db()
+        self.assertEqual(self.outsider.department_id, self.other.pk)
+        page = self.client.get(reverse('player:admin_panel'))
+        self.assertContains(page, 'data-act="del-department"')
+        self.assertNotContains(page, 'Удаляемый отдел')
+
+    def test_lectures_and_files_remain_and_restricted_access_is_not_made_public(self):
+        section = Section.objects.create(title='Материалы')
+        lecture = Lecture.objects.create(section=section, title='Закрытая лекция', is_public=False)
+        shared = Lecture.objects.create(section=section, title='Для двух отделов', is_public=False)
+        lecture.departments.add(self.department)
+        shared.departments.add(self.department, self.other)
+        obj = LectureFile.objects.create(lecture=lecture, name='test.pdf', type='pdf', file='test.pdf')
+        self.client.post(self.url)
+        lecture.refresh_from_db()
+        self.assertFalse(lecture.is_public)
+        self.assertFalse(lecture.departments.exists())
+        self.assertTrue(LectureFile.objects.filter(pk=obj.pk).exists())
+        self.assertEqual(list(shared.departments.all()), [self.other])
+        self.member.refresh_from_db()
+        self.assertFalse(Lecture.objects.visible_to(self.member).filter(pk=lecture.pk).exists())
+        self.assertTrue(Lecture.objects.visible_to(self.outsider).filter(pk=shared.pk).exists())
+
+    def test_only_admin_can_delete_with_post(self):
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+        self.client.force_login(self.member)
+        self.assertEqual(self.client.post(self.url).status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.client.post(self.url).status_code, 302)
+        self.assertTrue(Department.objects.filter(pk=self.department.pk).exists())
+
+    def test_delete_empty_department_and_missing_department(self):
+        url = reverse('player:api_department_delete', args=[self.other.pk])
+        self.outsider.department = None
+        self.outsider.save()
+        self.assertEqual(self.client.post(url).status_code, 200)
+        self.assertEqual(self.client.post(url).status_code, 404)
+
+
 class LectureFileCleanupTests(TestCase):
     def setUp(self):
         self.media = TemporaryDirectory()

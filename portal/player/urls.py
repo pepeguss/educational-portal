@@ -9,6 +9,7 @@ urlpatterns = [
     path('lecture/<int:lecture_id>/', views.lecture_view, name='lecture'),
     path('admin/', views.admin_view, name='admin_panel'),
     path('api/department/create/', views.api_department_create, name='api_department_create'),
+    path('api/department/<int:department_id>/delete/', views.api_department_delete, name='api_department_delete'),
     path('api/user/<int:user_id>/department/', views.api_user_department_update, name='api_user_department_update'),
     path('api/users/departments/', views.api_user_departments_update, name='api_user_departments_update'),
     path('api/user/<int:user_id>/delete/', views.api_user_delete, name='api_user_delete'),

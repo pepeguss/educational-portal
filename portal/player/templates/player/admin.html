@@ -15,6 +15,7 @@
           <div class="bg-white border border-gray-200 rounded-lg px-4 py-3">
             <span class="font-medium">{{ department.name }}</span>
             <span data-department-count="{{ department.id }}" class="text-sm text-gray-500 ml-2">{{ department.user_count }} польз.</span>
+            <button type="button" data-act="del-department" data-department-id="{{ department.id }}" data-department-name="{{ department.name }}" aria-label="Удалить отдел {{ department.name }}" class="ml-2 px-3 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">Удалить</button>
           </div>
         {% empty %}
           <p class="text-sm text-gray-500">Создайте отдел, чтобы назначить ему пользователей и лекции.</p>
@@ -25,32 +26,35 @@
     <details class="mb-8 bg-white rounded-xl border border-gray-200 p-5">
       <summary class="cursor-pointer text-lg font-semibold">Пользователи, отделы и роли</summary>
       <p class="mt-3 text-sm text-gray-500">У каждого пользователя один отдел. Пользователям без отдела доступны общие лекции. Администраторы видят все лекции и управляют порталом.</p>
+      <label for="user-search" class="block mt-4">
+        <span class="block text-sm font-medium text-gray-700 mb-1">Поиск по ФИО</span>
+        <input id="user-search" type="search" placeholder="Введите имя или фамилию" autocomplete="off" aria-controls="users-list" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+      </label>
+      <p id="user-search-status" role="status" class="mt-2 text-sm text-gray-500"></p>
       <form id="user-departments-form" action="{% url 'player:api_user_departments_update' %}" method="post" class="mt-4">
         {% csrf_token %}
-        <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+        <div id="users-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
         {% for portal_user in portal_users %}
-          <div data-user-row class="border-t border-gray-100 pt-3">
+          <div data-user-row data-user-full-name="{{ portal_user.full_name }}" class="border-t border-gray-100 pt-3">
             <div class="admin-user flex flex-wrap items-center gap-3">
               <label for="user-department-{{ portal_user.id }}" class="flex-1 min-w-0">
-                <span class="block font-medium break-words">{{ portal_user.full_name|default:portal_user.username }}</span>
-                <span class="block text-xs text-gray-500">{{ portal_user.username }}</span>
+                <span class="block font-medium break-words">{{ portal_user.full_name|default:"ФИО не указано" }}</span>
               </label>
-              <select id="user-department-{{ portal_user.id }}" data-user-id="{{ portal_user.id }}" aria-label="Отдел пользователя {{ portal_user.username }}" class="max-w-full sm:w-56 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <select id="user-department-{{ portal_user.id }}" data-user-id="{{ portal_user.id }}" aria-label="Отдел пользователя {{ portal_user.full_name|default:'ФИО не указано' }}" class="max-w-full sm:w-56 border border-gray-200 rounded-lg px-3 py-2 text-sm">
                 <option value="">Без отдела</option>
                 {% for department in departments %}
                   <option value="{{ department.id }}" {% if portal_user.department_id == department.id %}selected{% endif %}>{{ department.name }}</option>
                 {% endfor %}
               </select>
-              <select id="user-role-{{ portal_user.id }}" data-user-role="{{ portal_user.id }}" {% if portal_user.id == user.id %}disabled data-own-role title="Нельзя снять роль администратора у своего аккаунта"{% endif %} aria-label="Роль пользователя {{ portal_user.username }}" class="max-w-full sm:w-48 border border-gray-200 rounded-lg px-3 py-2 text-sm disabled:opacity-50">
+              <select id="user-role-{{ portal_user.id }}" data-user-role="{{ portal_user.id }}" {% if portal_user.id == user.id %}disabled data-own-role title="Нельзя снять роль администратора у своего аккаунта"{% endif %} aria-label="Роль пользователя {{ portal_user.full_name|default:'ФИО не указано' }}" class="max-w-full sm:w-48 border border-gray-200 rounded-lg px-3 py-2 text-sm disabled:opacity-50">
                 <option value="user" {% if portal_user.role == 'user' %}selected{% endif %}>Пользователь</option>
                 <option value="admin" {% if portal_user.role == 'admin' %}selected{% endif %}>Администратор</option>
               </select>
-              <button type="button" data-delete-user="{{ portal_user.id }}" data-user-name="{{ portal_user.username }}" {% if portal_user.id == user.id %}disabled data-own-account title="Нельзя удалить свой аккаунт"{% endif %} class="px-3 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">Удалить аккаунт</button>
+              <button type="button" data-delete-user="{{ portal_user.id }}" data-user-name="{{ portal_user.full_name|default:'ФИО не указано' }}" {% if portal_user.id == user.id %}disabled data-own-account title="Нельзя удалить свой аккаунт"{% endif %} class="px-3 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50">Удалить аккаунт</button>
             </div>
           </div>
-        {% empty %}
-          <p class="text-sm text-gray-500">Пользователей пока нет.</p>
         {% endfor %}
+          <p id="users-search-empty" hidden class="text-sm text-gray-500 py-4">Пользователи не найдены. Попробуйте изменить запрос.</p>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 mt-4 pt-4">
           <p id="departments-status" role="status" class="text-sm text-gray-500">Нет изменений</p>
@@ -117,5 +121,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-  <script src="{% static 'js/admin.js' %}?v=7"></script>
+  <script src="{% static 'js/admin.js' %}?v=9"></script>
 {% endblock %}

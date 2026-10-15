@@ -118,6 +118,17 @@ def api_department_create(request):
 
 @login_required
 @require_POST
+def api_department_delete(request, department_id):
+    if request.user.role != 'admin':
+        return JsonResponse({'error': 'Forbidden'}, status=403)
+    department = get_object_or_404(Department, pk=department_id)
+    # User.department uses SET_NULL: delete only the department, keep its members.
+    department.delete()
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
 def api_user_department_update(request, user_id):
     if request.user.role != 'admin':
         return JsonResponse({'error': 'Forbidden'}, status=403)

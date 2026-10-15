@@ -142,6 +142,30 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   const departmentsForm = document.getElementById('user-departments-form');
+  const userSearch = document.getElementById('user-search');
+  const searchStatus = document.getElementById('user-search-status');
+  const searchEmpty = document.getElementById('users-search-empty');
+  const normalizeName = value => value.normalize('NFKC').toLocaleLowerCase('ru').replace(/ё/g, 'е').trim().replace(/\s+/g, ' ');
+  const userRows = Array.from(departmentsForm.querySelectorAll('[data-user-row]'), row => ({
+    row, name: normalizeName(row.dataset.userFullName),
+  }));
+  function filterUsers() {
+    const query = normalizeName(userSearch.value);
+    const words = query ? query.split(' ') : [];
+    let total = 0;
+    let visible = 0;
+    userRows.forEach(({ row, name }) => {
+      if (!row.isConnected) return;
+      total++;
+      row.hidden = !words.every(word => name.includes(word));
+      if (!row.hidden) visible++;
+    });
+    searchStatus.textContent = `Показано: ${visible} из ${total}`;
+    searchEmpty.hidden = visible > 0;
+    searchEmpty.textContent = total ? 'Пользователи не найдены. Попробуйте изменить запрос.' : 'Пользователей пока нет.';
+  }
+  userSearch.addEventListener('input', filterUsers);
+  filterUsers();
   const departmentSelects = Array.from(departmentsForm.querySelectorAll('select[data-user-id]'));
   const departmentSave = document.getElementById('save-departments');
   const departmentStatus = document.getElementById('departments-status');
@@ -155,9 +179,13 @@ document.addEventListener('DOMContentLoaded', () => {
   );
 
   const deleteButtons = departmentsForm.querySelectorAll('[data-delete-user]');
-  const syncDeleteButtons = () => deleteButtons.forEach(button => {
-    button.disabled = departmentsSaving || button.hasAttribute('data-own-account');
-  });
+  const departmentDeleteButtons = document.querySelectorAll('[data-act="del-department"]');
+  const syncDeleteButtons = () => {
+    deleteButtons.forEach(button => {
+      button.disabled = departmentsSaving || button.hasAttribute('data-own-account');
+    });
+    departmentDeleteButtons.forEach(button => { button.disabled = departmentsSaving; });
+  };
   departmentsForm.addEventListener('click', async event => {
     const button = event.target.closest('[data-delete-user]');
     if (!button || button.disabled || departmentsSaving) return;
@@ -171,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       await post(`/api/user/${button.dataset.deleteUser}/delete/`, {});
       button.closest('[data-user-row]').remove();
+      filterUsers();
       document.querySelectorAll('[data-department-count]').forEach(counter => {
         const count = departmentSelects.filter(select => select.isConnected && savedDepartments.get(select) === counter.dataset.departmentCount).length;
         counter.textContent = `${count} польз.`;
@@ -317,6 +346,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const lid = lecture?.dataset.lectureId;
 
     switch (button.dataset.act) {
+      case 'del-department': {
+        if (departmentsSaving) return;
+        if (changedDepartments().length) {
+          departmentsForm.closest('details').open = true;
+          showError(departmentError, 'Сначала сохраните изменения пользователей, затем удалите отдел.');
+          departmentSave.scrollIntoView({ block: 'center' });
+          return;
+        }
+        if (!confirm(`Удалить отдел «${button.dataset.departmentName}»? Его сотрудники останутся в системе без отдела. Лекции сохранятся; доступ удаляемого отдела к ним будет снят.`)) return;
+        departmentsSaving = true;
+        syncDeleteButtons();
+        departmentSelects.forEach(select => { select.disabled = true; });
+        roleSelects.forEach(select => { select.disabled = true; });
+        try {
+          await post(`/api/department/${button.dataset.departmentId}/delete/`, {});
+          location.reload();
+        } catch (error) {
+          alert(error.message);
+        } finally {
+          departmentsSaving = false;
+          syncDeleteButtons();
+          departmentSelects.forEach(select => { select.disabled = false; });
+          roleSelects.forEach(select => { select.disabled = select.hasAttribute('data-own-role'); });
+        }
+        break;
+      }
       case 'add-department':
         openEditor('Новый отдел', '/api/department/create/');
         break;
